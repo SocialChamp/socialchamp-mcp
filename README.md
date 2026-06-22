@@ -7,25 +7,43 @@ connected social profiles, and reading analytics.
 
 ## Tools
 
+The tool catalog mirrors the published Social Champ MCP schema. Channels are
+connected social profiles; workspaces group channels and shareable calendars.
+
 | Tool | Description | Type |
 | --- | --- | --- |
-| `list_social_accounts` | List connected profiles with id, network, and display name | Read-only |
-| `get_best_time_to_post` | Recommended posting times for a profile | Read-only |
-| `get_account_analytics` | Aggregate metrics for a profile over a date range | Read-only |
-| `list_scheduled_posts` | List scheduled, queued, and published posts | Read-only |
-| `get_post` | Get a single post | Read-only |
-| `get_post_analytics` | Engagement metrics for one published post | Read-only |
-| `schedule_post` | Create or schedule a post to one or more profiles | Write |
-| `update_post` | Edit the content or time of an existing post | Write |
-| `delete_post` | Permanently delete a scheduled post | Destructive |
+| `get_channels` | List all connected channels | Read-only |
+| `get_channel` | Fetch one channel by id | Read-only |
+| `get_filtered_channels` | Find channels by platform type and search text | Read-only |
+| `get_workspaces` | List available workspaces | Read-only |
+| `get_paginated_posts` | Browse post history by page | Read-only |
+| `get_posts_for_channels` | Fetch posts for specific channels | Read-only |
+| `get_posts_with_assets` | Fetch posts that contain media | Read-only |
+| `get_scheduled_posts` | Fetch upcoming scheduled posts | Read-only |
+| `get_calendar_view_options` | Supported calendar view modes | Read-only |
+| `get_shareable_calendars` | List shareable calendars in a workspace | Read-only |
+| `get_in_app_calendar_url` | In-app calendar URL | Read-only |
+| `create_text_post` | Create or schedule a text post to channels | Write |
+| `create_image_post` | Create or schedule an image post to channels | Write |
+| `update_post` | Update an existing post by id | Write |
+| `create_public_calendar_link` | Create a shareable public calendar link | Write |
+| `update_shareable_calendar` | Update a shareable calendar | Write |
+| `delete_post` | Delete a post by id | Destructive |
+| `delete_shareable_calendar` | Delete a shareable calendar | Destructive |
 
 Each tool is annotated with `ToolAnnotations` so clients can apply the right
 confirmation behavior. Destructive tools carry `destructiveHint=True`.
 
+The hosted Social Champ MCP server exposes more tools than this published
+catalog (location search, AI wizard, queue operations, labels, recycling,
+agency approval workflows, and bulk operations). This server covers the
+published catalog.
+
 ## Requirements
 
 - Python 3.10 or newer.
-- A Social Champ API key.
+- A Social Champ API key or OAuth2 access token. Both are sent as a Bearer token.
+  OAuth2 scopes used by the published tools are `read_profile` and `manage_post`.
 
 ## Install
 
@@ -55,7 +73,7 @@ Set configuration through environment variables.
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
-| `SOCIALCHAMP_API_KEY` | yes | none | Bearer token for API calls |
+| `SOCIALCHAMP_API_KEY` | yes | none | Bearer token: a Social Champ API key or OAuth2 access token |
 | `SOCIALCHAMP_API_BASE_URL` | no | `https://api.socialchamp.com/api/v1` | Override base URL |
 | `SOCIALCHAMP_TIMEOUT` | no | `30` | Request timeout in seconds |
 | `SOCIALCHAMP_TRANSPORT` | no | `stdio` | `stdio`, `sse`, or `streamable-http` |
@@ -103,9 +121,12 @@ SOCIALCHAMP_TRANSPORT=streamable-http SOCIALCHAMP_API_KEY=your-api-key socialcha
 
 ## Mapping to the real API
 
-The base URL and Bearer authentication are confirmed from the Social Champ
+The tool names, argument names, and nouns mirror the published Social Champ MCP
+schema and the hosted server's tool definitions. The base URL and Bearer
+authentication are confirmed from the Social Champ
 [authentication guide](https://developers.socialchamp.com/docs/authentication).
-The endpoint paths, request body field names, and query parameters live in
+
+The REST paths, request body field names, and query parameters live in
 `src/socialchamp_mcp/client.py`. Where a path or field still needs to be
 confirmed against the [OpenAPI reference](https://developers.socialchamp.com/api-reference),
 it is marked with a `TODO` comment. All such assumptions are isolated to
@@ -140,15 +161,18 @@ async def archive_post(self, post_id: str):
 
 ```python
 # server.py
-@mcp.tool(annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False))
-async def archive_post(post_id: str) -> dict:
+@mcp.tool(annotations=WRITE)
+async def archive_post(postId: str) -> dict:
     """Archive a post so it no longer appears in the active queue.
 
     Args:
-        post_id: The id of the post to archive.
+        postId: The id of the post to archive.
     """
-    return await _get_client().archive_post(post_id)
+    return await _get_client().archive_post(postId)
 ```
+
+`READ`, `WRITE`, `UPDATE`, and `DESTRUCTIVE` are `ToolAnnotations` presets
+defined in `server.py`.
 
 The tool never touches httpx. See `CONTRIBUTING.md` for the full checklist.
 
