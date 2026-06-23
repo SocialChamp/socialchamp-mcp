@@ -10,11 +10,13 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
-# Confirmed against the Social Champ authentication guide
-# (https://developers.socialchamp.com/docs/authentication).
-DEFAULT_BASE_URL = "https://api.socialchamp.com/api/v1"
+# The hosted Social Champ MCP endpoint. Tools forward to this server over
+# JSON-RPC. Override with SOCIALCHAMP_API_BASE_URL for local testing
+# (for example http://localhost:3000/mcp).
+DEFAULT_BASE_URL = "https://mcp.socialchamp.com/mcp"
 DEFAULT_TIMEOUT = 30.0
 DEFAULT_TRANSPORT = "stdio"
+DEFAULT_PROTOCOL_VERSION = "2025-06-18"
 VALID_TRANSPORTS = ("stdio", "sse", "streamable-http")
 
 
@@ -26,6 +28,7 @@ class Settings:
     base_url: str
     timeout: float
     transport: str
+    protocol_version: str
 
 
 def _get_float(name: str, default: float) -> float:
@@ -54,4 +57,6 @@ def load_settings() -> Settings:
         base_url=base_url,
         timeout=_get_float("SOCIALCHAMP_TIMEOUT", DEFAULT_TIMEOUT),
         transport=_get_transport(),
+        protocol_version=os.environ.get("SOCIALCHAMP_MCP_PROTOCOL_VERSION")
+        or DEFAULT_PROTOCOL_VERSION,
     )

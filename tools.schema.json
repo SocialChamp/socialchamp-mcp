@@ -1,0 +1,1511 @@
+[
+  {
+    "name": "create_image_post",
+    "title": "Post — Create with Images",
+    "description": "Create and optionally schedule an image post to one or more channels. After successful scheduling, ask whether to view posting calendar, check scheduled posts, or create another post.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "text": {
+          "type": "string",
+          "description": "Caption or post text to publish with the images; provide plain text as entered by the user."
+        },
+        "imageUrls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Publicly accessible image URL strings to attach to the post (e.g. 'https://example.com/image.jpg')."
+        },
+        "channelIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Target channel id values where the post should be published; obtain these from 'get_channels' or 'get_filtered_channels'."
+        },
+        "dateTime": {
+          "type": "string",
+          "description": "ISO 8601 date-time for when to publish (e.g. '2026-04-10T14:00:00Z'). Required when isScheduled is true. Omit to post immediately."
+        },
+        "isScheduled": {
+          "type": "boolean",
+          "description": "Set to true to schedule the post for a future dateTime. Set to false or omit to post immediately. When true, dateTime is required.",
+          "default": false
+        },
+        "location": {
+          "type": "object",
+          "description": "Optional location tag for FB_PAGE, IG_BUSINESS, and IG_DIRECT posts. Resolve it FIRST via the 'location_search' tool and pass the returned object — only the `id` is applied when publishing; a bare name/place without a valid platform `id` is stored but NOT tagged on the post. Other platforms ignore this field.",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Platform location/place id."
+            },
+            "name": {
+              "type": "string",
+              "description": "Human-readable location name."
+            },
+            "place": {
+              "type": "string",
+              "description": "Optional platform-specific place payload/name when available."
+            }
+          },
+          "additionalProperties": false
+        },
+        "firstComment": {
+          "type": "object",
+          "description": "Optional auto-first-comment. Lights up on every channel in this post that supports it: Instagram, LinkedIn (page + personal), Facebook page, YouTube, TikTok. Other platforms (X, BlueSky, Mastodon, Pinterest, Threads, Google Business) silently ignore the field. Each platform enforces its own char limit at publish time (IG 2200, FB 2000, LI 1250, TikTok 150).",
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "First-comment body. Same text is used on every supporting platform."
+            },
+            "media": {
+              "type": "string",
+              "description": "Optional publicly-accessible URL to attach to the first comment. Honoured only on LinkedIn and Facebook; ignored on Instagram, YouTube, TikTok."
+            },
+            "delayMinutes": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Optional delay in minutes after the main post is published before the first comment fires. Honoured on LinkedIn, Facebook, YouTube, TikTok (and Instagram via igExtras.commentDelay where supported)."
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        "instaFirstComment": {
+          "type": "string",
+          "description": "DEPRECATED — pass `firstComment: { text }` instead. Kept for backwards compatibility; if both are present, `firstComment` wins."
+        }
+      },
+      "required": [
+        "text",
+        "imageUrls",
+        "channelIds"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "create_text_post",
+    "title": "Post — Create Text",
+    "description": "Create and optionally schedule a text post to one or more channels. After successful scheduling, ask whether to view posting calendar, check scheduled posts, or create another post.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "text": {
+          "type": "string",
+          "description": "Post text content to publish exactly as the user wants it posted."
+        },
+        "channelIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Target channel id values where the post should be published; obtain these from 'get_channels' or 'get_filtered_channels'."
+        },
+        "dateTime": {
+          "type": "string",
+          "description": "ISO 8601 date-time for when to publish (e.g. '2026-04-10T14:00:00Z'). Required when isScheduled is true. Omit to post immediately."
+        },
+        "isScheduled": {
+          "type": "boolean",
+          "description": "Set to true to schedule the post for a future dateTime. Set to false or omit to post immediately. When true, dateTime is required.",
+          "default": false
+        },
+        "location": {
+          "type": "object",
+          "description": "Optional location tag for FB_PAGE, IG_BUSINESS, and IG_DIRECT posts. Resolve it FIRST via the 'location_search' tool and pass the returned object — only the `id` is applied when publishing; a bare name/place without a valid platform `id` is stored but NOT tagged on the post. Other platforms ignore this field.",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Platform location/place id."
+            },
+            "name": {
+              "type": "string",
+              "description": "Human-readable location name."
+            },
+            "place": {
+              "type": "string",
+              "description": "Optional platform-specific place payload/name when available."
+            }
+          },
+          "additionalProperties": false
+        },
+        "firstComment": {
+          "type": "object",
+          "description": "Optional auto-first-comment. Lights up on every channel in this post that supports it: Instagram, LinkedIn, Facebook page, YouTube, TikTok. Other platforms silently ignore the field. Per-platform char limits enforced at publish time.",
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "media": {
+              "type": "string",
+              "description": "Optional URL to attach. Honoured on LinkedIn and Facebook only."
+            },
+            "delayMinutes": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        "instaFirstComment": {
+          "type": "string",
+          "description": "DEPRECATED — pass `firstComment: { text }` instead. Kept for backwards compatibility."
+        }
+      },
+      "required": [
+        "text",
+        "channelIds"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "update_post",
+    "title": "Post — Update",
+    "description": "Update an existing post by postId. Text maps to upstream message, and the post profile is auto-resolved from the existing post unless one channelId override is provided.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "postId": {
+          "type": "string",
+          "description": "Post id to update."
+        },
+        "text": {
+          "type": "string",
+          "description": "Updated text/caption for the post."
+        },
+        "dateTime": {
+          "type": "string",
+          "description": "Updated ISO 8601 schedule date-time (e.g. '2026-04-18T14:00:00Z')."
+        },
+        "channelIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Updated target channel ids."
+        },
+        "imageUrls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Updated image URL list for media posts."
+        }
+      },
+      "required": [
+        "postId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "delete_post",
+    "title": "Post — Delete",
+    "description": "Delete an existing post by postId, such as canceling a scheduled post.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "postId": {
+          "type": "string",
+          "description": "Post id to delete."
+        }
+      },
+      "required": [
+        "postId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_channel",
+    "title": "Channels — Get by Id",
+    "description": "Fetch details for a single connected channel by channelId. After returning details, suggest posting or viewing that channel's posts.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "channelId": {
+          "type": "string",
+          "description": "Channel id to fetch details for; obtain this id from 'get_channels' or 'get_filtered_channels'."
+        },
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        }
+      },
+      "required": [
+        "channelId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "location_search",
+    "title": "Location — Search Places",
+    "description": "Resolve a free-text place query (e.g. 'Eiffel Tower', 'Starbucks Seattle') into taggable location candidates for an FB_PAGE, IG_BUSINESS, or IG_DIRECT channel. Returns a list of { id, name, place }. Call this FIRST to obtain a valid `id`, then pass that location object to a post-creation tool (create_text_post / create_image_post / bulk_schedule) — only the `id` is honored when the post is published; a bare name/place is ignored. Other channel types do not support location tagging.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "channelId": {
+          "type": "string",
+          "description": "Facebook or Instagram channel id to search places for; obtain from 'get_channels' or 'get_filtered_channels'. The channel's connection is used to query the platform, so results are scoped to that platform."
+        },
+        "searchQuery": {
+          "type": "string",
+          "description": "Free-text place to look up, e.g. a venue, business, or landmark name."
+        },
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        }
+      },
+      "required": [
+        "channelId",
+        "searchQuery"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_channels",
+    "title": "Channels — List All",
+    "description": "List all connected channels for the account. After listing, suggest filtering channels or creating a post.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_filtered_channels",
+    "title": "Channels — Search & Filter",
+    "description": "List channels filtered by platform types and/or text search. After results, suggest creating a post or viewing posts for those channels.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Filter by platform names ('twitter','facebook','linkedin','instagram','tiktok','youtube','pinterest','bluesky','threads','mastodon','google') or internal codes ('TW','FB_PAGE','IN', etc.). Names are case-insensitive."
+        },
+        "search": {
+          "type": "string",
+          "description": "Free-text search across channel name, screenName, or email fields. Omit to disable text filtering."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_workspaces",
+    "title": "Workspaces — List All",
+    "description": "List available workspaces for the account. After listing, suggest viewing or creating shareable calendars.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_paginated_posts",
+    "title": "Posts — Browse History",
+    "description": "Browse post history with page and pageSize controls. After results, suggest next page, channel-specific posts, or scheduled posts.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "page": {
+          "type": "number",
+          "description": "1-based page number to fetch. Omit to use the first page.",
+          "default": 1
+        },
+        "pageSize": {
+          "type": "number",
+          "description": "Maximum number of posts to return per page. Omit to use the default page size.",
+          "default": 20
+        },
+        "fromDate": {
+          "type": "string",
+          "description": "Optional ISO 8601 start date-time filter (inclusive), e.g. '2026-04-01T00:00:00Z'."
+        },
+        "toDate": {
+          "type": "string",
+          "description": "Optional ISO 8601 end date-time filter (inclusive), e.g. '2026-04-30T23:59:59Z'."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_posts_for_channels",
+    "title": "Posts — By Channels",
+    "description": "Fetch posts scoped to specific channelIds with an optional limit. After results, suggest creating a post or checking scheduled posts.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "channelIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Channel id values to scope results to; obtain these from 'get_channels' or 'get_filtered_channels'."
+        },
+        "limit": {
+          "type": "number",
+          "description": "Maximum number of posts to return across the selected channels. Omit to use the default limit.",
+          "default": 50
+        },
+        "fromDate": {
+          "type": "string",
+          "description": "Optional ISO 8601 start date-time filter (inclusive), e.g. '2026-04-01T00:00:00Z'."
+        },
+        "toDate": {
+          "type": "string",
+          "description": "Optional ISO 8601 end date-time filter (inclusive), e.g. '2026-04-30T23:59:59Z'."
+        }
+      },
+      "required": [
+        "channelIds"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_posts_with_assets",
+    "title": "Posts — With Media Assets",
+    "description": "Fetch posts that include media assets such as images or videos. After results, suggest creating an image post or viewing all posts.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "limit": {
+          "type": "number",
+          "description": "Maximum number of asset-containing posts to return. Omit to use the default limit.",
+          "default": 50
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_scheduled_posts",
+    "title": "Posts — View Scheduled",
+    "description": "Fetch upcoming scheduled posts with an optional limit. After results, suggest creating a new post or opening calendar views.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "limit": {
+          "type": "number",
+          "description": "Maximum number of scheduled posts to return. Omit to use the default limit.",
+          "default": 50
+        },
+        "fromDate": {
+          "type": "string",
+          "description": "Optional ISO 8601 start date-time filter (inclusive), e.g. '2026-04-01T00:00:00Z'."
+        },
+        "toDate": {
+          "type": "string",
+          "description": "Optional ISO 8601 end date-time filter (inclusive), e.g. '2026-04-30T23:59:59Z'."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_calendar_view_options",
+    "title": "Calendar — View Options",
+    "description": "Return supported calendar viewing modes and capabilities. After results, suggest viewing scheduled posts or creating a shareable link.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_shareable_calendars",
+    "title": "Calendar — List Shareable Links",
+    "description": "List existing shareable calendars for a workspace. After results, suggest creating a new link or opening calendar views.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Workspace id to list shareable calendars for; obtain this from 'get_workspaces'."
+        }
+      },
+      "required": [
+        "workspaceId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "create_public_calendar_link",
+    "title": "Calendar — Create Public Link",
+    "description": "Create a shareable public calendar link for selected channels and date range. Before creating, ask whether the link should be password protected or open; if protected, collect an 8-20 character password.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Workspace id where the shareable calendar should be created; obtain this from 'get_workspaces'."
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name for the shareable calendar link shown to users."
+        },
+        "profileIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Profile/channel id values to include in the shared calendar; these are channelId values from 'get_channels' or 'get_filtered_channels'."
+        },
+        "fromDate": {
+          "type": "string",
+          "description": "ISO 8601 start date-time for the shared calendar window (e.g. '2026-04-01T00:00:00Z')."
+        },
+        "toDate": {
+          "type": "string",
+          "description": "ISO 8601 end date-time for the shared calendar window (e.g. '2026-04-30T23:59:59Z')."
+        },
+        "password": {
+          "type": "string",
+          "description": "Optional password to protect the public calendar link; must be 8-20 characters if provided. Omit for an unprotected link."
+        },
+        "permissionRoles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "EDIT",
+              "DELETE",
+              "APPROVE"
+            ]
+          },
+          "description": "Optional permission role strings to allow actions in the shared calendar ('EDIT', 'DELETE', 'APPROVE'). Omit to use default permissions."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the created public calendar link should be active immediately. Omit to create it as active.",
+          "default": true
+        }
+      },
+      "required": [
+        "workspaceId",
+        "name",
+        "profileIds",
+        "fromDate",
+        "toDate"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_in_app_calendar_url",
+    "title": "Calendar — Get In-App URL",
+    "description": "Return the authenticated in-app Social Champ calendar URL. After results, suggest viewing scheduled posts or managing shareable calendars.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "calendarToken": {
+          "type": "string",
+          "description": "Optional public calendar token (calendarId), typically obtained from 'get_shareable_calendars' or 'create_public_calendar_link'. Omit when only the in-app calendar URL is needed."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "update_shareable_calendar",
+    "title": "Calendar — Update Shareable",
+    "description": "Update a shareable calendar by calendarId, including name, date range, password, isActive, or permissionRoles.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "calendarId": {
+          "type": "string",
+          "description": "Shareable calendar id to update."
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Optional workspace id override when resolving update payloads."
+        },
+        "name": {
+          "type": "string",
+          "description": "Updated display name for the shareable calendar."
+        },
+        "fromDate": {
+          "type": "string",
+          "description": "Updated ISO 8601 start date-time for the shared calendar window."
+        },
+        "toDate": {
+          "type": "string",
+          "description": "Updated ISO 8601 end date-time for the shared calendar window."
+        },
+        "password": {
+          "type": "string",
+          "description": "Optional updated password (8-20 chars). Omit to keep current password unchanged."
+        },
+        "permissionRoles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "EDIT",
+              "DELETE",
+              "APPROVE"
+            ]
+          },
+          "description": "Optional updated permission role strings ('EDIT', 'DELETE', 'APPROVE')."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Optional active status for the shareable calendar."
+        }
+      },
+      "required": [
+        "calendarId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "approval_list_pending",
+    "title": "Approval — List Pending",
+    "requiredScopes": [
+      "manage_team"
+    ],
+    "description": "List posts awaiting approval, owned by the account. Returns up to 50 per call. Filterable by channel and team-member id. Use to answer 'what's pending review' or 'show me posts waiting on me'.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PENDING",
+            "APPROVED",
+            "DECLINED"
+          ],
+          "default": "PENDING",
+          "description": "Approval status to filter by. Defaults to PENDING."
+        },
+        "profileIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional channel-id filter."
+        },
+        "teamMemberIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional team-member-id filter."
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Pagination offset."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50,
+          "default": 25
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "approval_approve",
+    "title": "Approval — Approve Post",
+    "requiredScopes": [
+      "manage_team"
+    ],
+    "description": "Approve a post that's awaiting review. The account must be in the workflow's approvers list for the active stage — if not, returns NOT_AN_APPROVER. Optional comment is recorded on the workflow history. Optional dateTime reschedules the post when the approval also moves it past the final stage.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string"
+        },
+        "postId": {
+          "type": "string"
+        },
+        "comment": {
+          "type": "string",
+          "description": "Optional comment recorded with the decision."
+        },
+        "dateTime": {
+          "type": "string",
+          "description": "Optional ISO 8601 reschedule time. When the post moves past the final approval stage, the publish time is set to this value (or now, if omitted)."
+        }
+      },
+      "required": [
+        "postId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "approval_reject",
+    "title": "Approval — Reject Post",
+    "requiredScopes": [
+      "manage_team"
+    ],
+    "description": "Reject a post that's awaiting review. Same approver requirement as approval_approve. Optional comment is recorded; the post moves to DECLINED status and a notification fires to the post owner.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string"
+        },
+        "postId": {
+          "type": "string"
+        },
+        "comment": {
+          "type": "string",
+          "description": "Optional comment explaining the rejection. Recommended."
+        }
+      },
+      "required": [
+        "postId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "approval_assign",
+    "title": "Approval — Remind Approvers",
+    "requiredScopes": [
+      "manage_team"
+    ],
+    "description": "Send an approval reminder for a pending post. Wraps the dashboard's 'Send reminder' notification — fires to the workflow stage's approvers (the same set defined in the workflow template). When `email` is supplied, validates that person IS an approver before sending; pass it to assert someone specific is in the loop. Throttled at 1 hour per post — repeated calls return ALREADY_NOTIFIED. Note: this does NOT modify the workflow's approver list — to add someone, edit the workflow template in Settings.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string"
+        },
+        "postId": {
+          "type": "string",
+          "description": "Pending post id. Get from 'approval_list_pending'."
+        },
+        "email": {
+          "type": "string",
+          "description": "Optional. Email of an approver the user wants to confirm is in the loop. Returns NOT_AN_APPROVER (403) if the email isn't in the workflow stage's approvers list. Notification still goes to ALL stage approvers (notification fan-out is workflow-defined)."
+        }
+      },
+      "required": [
+        "postId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "bulk_delete",
+    "title": "Posts — Bulk Delete",
+    "requiredScopes": [
+      "manage_team"
+    ],
+    "description": "Delete many posts at once — past or future, by either an explicit id list OR a predicate (channels × date range × status × error state). DESTRUCTIVE: defaults to dryRun=true; the LLM MUST explicitly pass dryRun=false to actually delete after the user confirms. Cap is 500 posts per call — anything bigger needs scripting. Each delete also cancels its publish job. Note: queue_clear is the lighter primitive for 'clear my upcoming queue' — bulk_delete is for ad-hoc destructive cleanup (failed posts, posts on a deprecated channel, etc.).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string"
+        },
+        "postIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Explicit post-id list. When supplied, the predicate filters below are ignored (you're targeting specific posts)."
+        },
+        "channelIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Channel filter. Combined with the other predicates with AND."
+        },
+        "fromDate": {
+          "type": "string",
+          "description": "ISO 8601. Posts with dateTime >= fromDate are candidates."
+        },
+        "toDate": {
+          "type": "string",
+          "description": "ISO 8601. Posts with dateTime <= toDate are candidates."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "DRAFT",
+            "SCHEDULED",
+            "POSTED",
+            "FAILED"
+          ],
+          "description": "Filter by post status. SCHEDULED forces dateTime >= now if no fromDate is given."
+        },
+        "hasError": {
+          "type": "boolean",
+          "description": "Filter by whether the post has a recorded error. Useful for cleaning up the FAILED bucket."
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": true,
+          "description": "When true (default), returns the count without deleting. Pass false to actually delete — irreversible."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "queue_reorder",
+    "title": "Queue — Bulk Reschedule",
+    "description": "Reschedule many posts in one call. Takes a list of {postId, dateTime} pairs and applies each as a time-only update — useful for 'swap these two posts', 'shift Tuesday's batch to Wednesday', or 'pull the launch announcement up to morning'. Distinct from queue_pause (which freezes posts in place) and bulk_delete (which removes them) — this just moves their dateTime. Sequential per-post update so a failure on one doesn't roll back the others; per-item failures captured in `data.failures`. Up to 100 items per call.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "description": "Array of {postId, dateTime} pairs. Each post is rescheduled to the supplied ISO 8601 dateTime.",
+          "items": {
+            "type": "object",
+            "required": [
+              "postId",
+              "dateTime"
+            ],
+            "properties": {
+              "postId": {
+                "type": "string"
+              },
+              "dateTime": {
+                "type": "string",
+                "description": "ISO 8601 datetime to reschedule to."
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "bulk_label",
+    "title": "Labels — Bulk Apply to Posts",
+    "requiredScopes": [
+      "manage_team"
+    ],
+    "description": "Apply (or replace, or clear) labels on up to 200 posts in a single call. Use mode=add to union the supplied labelIds with each post's existing labels (default mode=replace overwrites). The response reports per-post failures so the LLM can re-try only the bad ones.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string"
+        },
+        "postIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "maxItems": 200,
+          "description": "Target post ids. Discover via 'get_paginated_posts' / 'get_scheduled_posts' / 'approval_list_pending'."
+        },
+        "labelIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Label ids to apply. Empty array + mode=replace clears all labels from each post. Discover via 'label_list'."
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "replace",
+            "add"
+          ],
+          "default": "replace",
+          "description": "'replace' overwrites each post's labels; 'add' unions with existing labels."
+        }
+      },
+      "required": [
+        "postIds",
+        "labelIds"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "generate_post",
+    "title": "AI — Generate Post",
+    "description": "Draft a social-media post body in the user's brand voice. Use when the user says 'write a post about X', 'draft something for our launch', 'give me an idea for Black Friday'. Produces text only — does not schedule. After successful generation, suggest scheduling it via 'create_text_post' or 'bulk_schedule', or refining via 'rewrite'.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account."
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Workspace id whose brand voice + AI key should be used. Required. Discover via 'get_workspaces'."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "What the post should be about, plain English. e.g. 'announce our new pricing page in a friendly, slightly playful tone'."
+        },
+        "channels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional target channel ids — informs length / format hints to the model."
+        },
+        "useBrandVoice": {
+          "type": "boolean",
+          "description": "Apply the workspace's saved brand-voice description and sample posts. Default true.",
+          "default": true
+        }
+      },
+      "required": [
+        "workspaceId",
+        "prompt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "suggest_hashtags",
+    "title": "AI — Suggest Hashtags",
+    "description": "Generate a set of hashtags for a topic or an existing post. The Wizard returns a list — use it to enrich a draft post, populate a post-creation tool's text, or just answer 'what hashtags should I use for X'.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string"
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Workspace id (required)."
+        },
+        "topic": {
+          "type": "string",
+          "description": "Topic or context the hashtags should fit, plain English. e.g. 'Black Friday sale on bath products'."
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30,
+          "default": 10,
+          "description": "How many hashtags to suggest. Default: 10."
+        }
+      },
+      "required": [
+        "workspaceId",
+        "topic"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "rewrite",
+    "title": "AI — Rewrite Post",
+    "description": "Rewrite an existing post body — shorten, expand, or rephrase. Use when the user pastes a post and asks for a tweak ('make this shorter', 'tighten this up', 'rewrite more casually'). Returns the original + rewritten text so the LLM can show a diff.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string"
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Workspace id (required)."
+        },
+        "text": {
+          "type": "string",
+          "description": "Original post body to rewrite."
+        },
+        "style": {
+          "type": "string",
+          "enum": [
+            "shorten",
+            "expand",
+            "rephrase"
+          ],
+          "default": "rephrase",
+          "description": "How to rewrite. 'shorten' tightens, 'expand' adds detail, 'rephrase' rewords without changing length."
+        }
+      },
+      "required": [
+        "workspaceId",
+        "text"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "generate_image",
+    "title": "AI — Generate Image",
+    "description": "Generate up to 4 images for a post. Use when the user says 'make me an image of...', 'I need a hero shot for...', 'create some visuals for the launch'. Counts against the user's monthly image-generation quota (same meter the AI Wizard uses).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string"
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Workspace id (required)."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "What the image should depict, plain English. e.g. 'launch hero for our new pricing page, minimal flat illustration with our brand orange'."
+        },
+        "style": {
+          "type": "string",
+          "enum": [
+            "generic",
+            "art",
+            "photo",
+            "abstract"
+          ],
+          "default": "generic",
+          "description": "Visual style."
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4,
+          "default": 4,
+          "description": "How many image variants to generate."
+        }
+      },
+      "required": [
+        "workspaceId",
+        "prompt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "queue_pause",
+    "title": "Queue — Pause",
+    "description": "Pause publishing on one or more channels. Future posts can't be scheduled on a paused channel, and any upcoming posts already in the queue will be held without firing. Use 'queue_resume' to bring the channel back online. When channelIds is omitted, every channel in the resolved workspace is paused.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account."
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Workspace id used as the fallback scope when channelIds isn't provided. Discover via 'get_workspaces'."
+        },
+        "channelIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Specific channel ids to pause. Omit to pause every channel in the resolved workspace. Discover via 'get_channels'."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "queue_resume",
+    "title": "Queue — Resume",
+    "description": "Resume a previously-paused channel. Lifts the per-channel user-pause flag and releases held posts back to their original slots — except on channels where billing has independently locked publishing, which stay frozen. The response reports billingLockedChannels separately so you can tell the user when a billing issue is what's still blocking publishes.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id."
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Fallback workspace scope when channelIds isn't provided."
+        },
+        "channelIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Specific channel ids to resume."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "queue_clear",
+    "title": "Queue — Clear",
+    "description": "Bulk-delete upcoming scheduled posts in a date range, optionally filtered by channels. Defaults to fromDate=now (past posts are out of scope). Always call once with dryRun=true first to surface the count, then again with dryRun=false (or omitted) to actually delete — this is irreversible. Each delete also cancels its publish job.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id."
+        },
+        "channelIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional channel-id filter. Omit to clear scheduled posts across every channel under the account."
+        },
+        "fromDate": {
+          "type": "string",
+          "description": "ISO 8601 datetime. Defaults to now. Posts with dateTime >= fromDate are candidates."
+        },
+        "toDate": {
+          "type": "string",
+          "description": "Optional ISO 8601 datetime. When set, only posts with dateTime <= toDate are candidates."
+        },
+        "dryRun": {
+          "type": "boolean",
+          "description": "When true, count matching posts without deleting. Always start with this — the operation is destructive.",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "list_collections",
+    "title": "Recycle — List Collections",
+    "description": "List the user's recycle collections. Each entry includes id, title, postCount and workspaceId. Use this before 'recycle_post' so the LLM can choose a target collection (or confirm the auto-resolved fallback).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account."
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Optional workspace filter. When omitted, all of the account's collections are returned across workspaces."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "recycle_post",
+    "title": "Recycle — Add Post to Collection",
+    "description": "Copy an existing post into a recycle collection so it re-publishes on the collection's recycle schedule. The original post is left untouched. If collectionId is omitted, the user's oldest collection in the resolved workspace is used; if the user has no collections, the response is a structured NEEDS_COLLECTION error so you can suggest creating one in the dashboard.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account."
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Optional workspace id to scope the fallback collection lookup. Ignored when collectionId is supplied."
+        },
+        "postId": {
+          "type": "string",
+          "description": "Source post id to copy from (an existing PostSchedule). Get this via 'get_paginated_posts' / 'get_scheduled_posts'."
+        },
+        "collectionId": {
+          "type": "string",
+          "description": "Optional target collection id. Omit to use the user's oldest collection in the resolved workspace. Discover ids via 'list_collections'."
+        }
+      },
+      "required": [
+        "postId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "bulk_schedule",
+    "title": "Posts — Bulk Schedule",
+    "description": "Schedule many posts in one call (up to 100). Each entry has its own text, channels, image/video URLs, and optional schedule time — useful for rolling out a content calendar, importing a CSV, or filling a queue. After successful scheduling, ask whether to view the calendar or check the queue.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "posts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "description": "Array of post specs. Each entry is treated independently — a validation failure on one post stops the whole batch (atomic semantics).",
+          "items": {
+            "type": "object",
+            "required": [
+              "text",
+              "channelIds"
+            ],
+            "properties": {
+              "text": {
+                "type": "string",
+                "description": "Post body. Per-platform limits are enforced server-side."
+              },
+              "channelIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "description": "Channel ids to publish on; obtain via 'get_channels'. The scheduler creates one post per channel."
+              },
+              "imageUrls": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Optional publicly-accessible image URLs to attach."
+              },
+              "videoUrls": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Optional publicly-accessible video URLs."
+              },
+              "dateTime": {
+                "type": "string",
+                "description": "ISO 8601 datetime to publish at. Required when isScheduled is true."
+              },
+              "isScheduled": {
+                "type": "boolean",
+                "description": "When true, the post is scheduled at dateTime. When false or omitted, the post is published immediately.",
+                "default": false
+              },
+              "location": {
+                "type": "object",
+                "description": "Optional location tag for FB_PAGE, IG_BUSINESS, and IG_DIRECT posts in this entry. Resolve via the 'location_search' tool and pass the returned object — only the `id` is applied at publish; a bare name/place is ignored. Other platforms ignore this field.",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Platform location/place id."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Human-readable location name."
+                  },
+                  "place": {
+                    "type": "string",
+                    "description": "Optional platform-specific place payload/name when available."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "firstComment": {
+                "type": "object",
+                "description": "Optional auto-first-comment. Lights up on every supporting platform in this entry's channels (IG, LinkedIn, Facebook, YouTube, TikTok).",
+                "properties": {
+                  "text": {
+                    "type": "string"
+                  },
+                  "media": {
+                    "type": "string"
+                  },
+                  "delayMinutes": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false
+              },
+              "instaFirstComment": {
+                "type": "string",
+                "description": "DEPRECATED — pass `firstComment: { text }` instead."
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "posts"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "label_list",
+    "title": "Labels — List",
+    "description": "List the post labels available in the user's workspace. Use this before applying a label to a post so the label exists. After listing, ask whether to create a new label, apply one to a post, or filter posts by label.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Workspace id to scope the label list. When omitted, the account's currently-selected workspace is used. Discover via 'get_workspaces' if the user has more than one."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "label_create",
+    "title": "Labels — Create",
+    "description": "Create a new post label in the user's workspace. Returns the new label including its id, which can be used immediately with 'label_apply'. Errors with code DUPLICATE if a label with the same title (case-insensitive) already exists.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Workspace id where the label should be created. When omitted, the account's currently-selected workspace is used."
+        },
+        "title": {
+          "type": "string",
+          "description": "Label title as the user wants it displayed. 1–40 characters; trimmed automatically."
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "label_apply",
+    "title": "Labels — Apply to Post",
+    "description": "Replace the labels on an existing post with the supplied list. Pass an empty `labelIds` to clear all labels from a post. The post must belong to the user's workspace.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Workspace id the post belongs to. When omitted, the account's currently-selected workspace is used."
+        },
+        "postId": {
+          "type": "string",
+          "description": "Target post id. Get this from 'get_paginated_posts', 'get_scheduled_posts', or other read tools."
+        },
+        "labelIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Label id values to attach to the post. Pass an empty array to clear all labels. Discover ids via 'label_list'."
+        }
+      },
+      "required": [
+        "postId",
+        "labelIds"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "label_remove",
+    "title": "Labels — Remove from Post",
+    "description": "Remove specific labels from a post (without touching the rest). Use when the user says 'unlabel this post', 'remove the X tag', 'drop the label'. Different from 'label_apply' which REPLACES the full label set; this tool subtracts the named ids from whatever is already on the post. Pass empty `labelIds` to clear all labels.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Workspace id the post belongs to. When omitted, the account's currently-selected workspace is used."
+        },
+        "postId": {
+          "type": "string",
+          "description": "Target post id. Get this from 'get_paginated_posts', 'get_scheduled_posts', or other read tools."
+        },
+        "labelIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Label ids to remove from the post. Empty array clears all labels. Discover ids via 'label_list'."
+        }
+      },
+      "required": [
+        "postId",
+        "labelIds"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "instagram_first_comment",
+    "title": "Instagram — First Comment",
+    "description": "Set or update the first-comment text on a scheduled or published Instagram post. Common pattern: keep the caption clean and put hashtags + CTA + tracked link in the first comment. Only works on Instagram posts (FB_PAGE / TW / LinkedIn use captions directly). Replaces the existing first-comment if one is already set.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Workspace id the post belongs to. When omitted, the account's currently-selected workspace is used."
+        },
+        "postId": {
+          "type": "string",
+          "description": "Target IG post id (scheduled or published). The post's social_type MUST be IG_BUSINESS — anything else is rejected."
+        },
+        "firstComment": {
+          "type": "string",
+          "maxLength": 2200,
+          "description": "The first-comment body. ≤2200 chars per IG limits. Plain text + emoji + hashtags allowed; URLs become non-clickable in IG comments but still trigger linkified preview cards on some surfaces."
+        }
+      },
+      "required": [
+        "postId",
+        "firstComment"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "delete_shareable_calendar",
+    "title": "Calendar — Delete Shareable",
+    "description": "Delete a shareable calendar by calendarId.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "calendarId": {
+          "type": "string",
+          "description": "Shareable calendar id to delete."
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "Optional workspace id fallback for APIs that require workspace-scoped delete."
+        }
+      },
+      "required": [
+        "calendarId"
+      ],
+      "additionalProperties": false
+    }
+  }
+]
