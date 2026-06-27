@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.socialchamp/socialchamp-mcp",
   "title": "Social Champ",
-  "description": "Manage your Social Champ social media from any MCP-compatible AI assistant: list channels and workspaces, create and schedule posts, generate AI content, run bulk actions, control the publishing queue, handle agency approvals, and create shareable calendars.",
+  "description": "Connect AI agents to Social Champ: manage channels, posts, AI content, queue, and approvals.",
   "version": "0.1.0",
   "websiteUrl": "https://developers.socialchamp.com",
   "repository": {
