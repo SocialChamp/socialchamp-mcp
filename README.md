@@ -199,3 +199,7 @@ It waits for input on stdin rather than exiting. Stop it with Ctrl+C.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Privacy Policy
+
+This extension connects to Social Champ on your behalf using your own API key. See the Social Champ Privacy Policy: https://www.socialchamp.com/privacy-policy/
