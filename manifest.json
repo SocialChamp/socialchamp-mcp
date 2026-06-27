@@ -226,5 +226,8 @@
     "social media management",
     "mcp"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "privacy_policies": [
+    "https://www.socialchamp.com/privacy-policy/"
+  ]
 }
