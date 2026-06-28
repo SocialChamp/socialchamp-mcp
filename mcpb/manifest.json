@@ -1,0 +1,219 @@
+{
+  "manifest_version": "0.4",
+  "name": "socialchamp-mcp",
+  "display_name": "Social Champ",
+  "version": "0.1.0",
+  "description": "Manage your Social Champ social media from Claude - channels, posts, AI content, queue, approvals, and shareable calendars.",
+  "long_description": "Connect Claude to Social Champ with one click. On first use a browser window opens for you to sign in to Social Champ and approve access (OAuth) - no API keys to copy or paste. Claude can then list connected channels and workspaces, create and schedule posts, generate AI content (posts, images, rewrites, hashtags), run bulk actions, control the publishing queue, manage labels, handle agency approval workflows, and create shareable calendars. This extension connects to the hosted Social Champ MCP server (mcp.socialchamp.com) via the mcp-remote bridge.",
+  "author": {
+    "name": "Social Champ",
+    "url": "https://www.socialchamp.com"
+  },
+  "icon": "icon.png",
+  "homepage": "https://developers.socialchamp.com",
+  "documentation": "https://developers.socialchamp.com/docs/mcp-guide",
+  "support": "https://developers.socialchamp.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SocialChamp/socialchamp-mcp"
+  },
+  "privacy_policies": [
+    "https://www.socialchamp.com/privacy-policy/"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "node_modules/mcp-remote/dist/proxy.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/node_modules/mcp-remote/dist/proxy.js",
+        "https://mcp.socialchamp.com/mcp",
+        "33418"
+      ]
+    }
+  },
+  "tools": [
+    {
+      "name": "create_image_post",
+      "description": "Create and optionally schedule an image post to one or more channels. After successful scheduling, ask whether to view posting calendar, check scheduled posts, or create another post."
+    },
+    {
+      "name": "create_text_post",
+      "description": "Create and optionally schedule a text post to one or more channels. After successful scheduling, ask whether to view posting calendar, check scheduled posts, or create another post."
+    },
+    {
+      "name": "update_post",
+      "description": "Update an existing post by postId. Text maps to upstream message, and the post profile is auto-resolved from the existing post unless one channelId override is provided."
+    },
+    {
+      "name": "delete_post",
+      "description": "Delete an existing post by postId, such as canceling a scheduled post."
+    },
+    {
+      "name": "get_channel",
+      "description": "Fetch details for a single connected channel by channelId. After returning details, suggest posting or viewing that channel's posts."
+    },
+    {
+      "name": "location_search",
+      "description": "Resolve a free-text place query (e.g. 'Eiffel Tower', 'Starbucks Seattle') into taggable location candidates for an FB_PAGE, IG_BUSINESS, or IG_DIRECT channel. Returns a list of { id, name, place }. Call this FIRST to obtain a valid `id`, then pass that location object to a post-creation tool (create_text_post / create_image_post / bulk_schedule) \u2014 only the `id` is honored when the post is published; a bare name/place is ignored. Other channel types do not support location tagging."
+    },
+    {
+      "name": "get_channels",
+      "description": "List all connected channels for the account. After listing, suggest filtering channels or creating a post."
+    },
+    {
+      "name": "get_filtered_channels",
+      "description": "List channels filtered by platform types and/or text search. After results, suggest creating a post or viewing posts for those channels."
+    },
+    {
+      "name": "get_workspaces",
+      "description": "List available workspaces for the account. After listing, suggest viewing or creating shareable calendars."
+    },
+    {
+      "name": "get_paginated_posts",
+      "description": "Browse post history with page and pageSize controls. After results, suggest next page, channel-specific posts, or scheduled posts."
+    },
+    {
+      "name": "get_posts_for_channels",
+      "description": "Fetch posts scoped to specific channelIds with an optional limit. After results, suggest creating a post or checking scheduled posts."
+    },
+    {
+      "name": "get_posts_with_assets",
+      "description": "Fetch posts that include media assets such as images or videos. After results, suggest creating an image post or viewing all posts."
+    },
+    {
+      "name": "get_scheduled_posts",
+      "description": "Fetch upcoming scheduled posts with an optional limit. After results, suggest creating a new post or opening calendar views."
+    },
+    {
+      "name": "get_calendar_view_options",
+      "description": "Return supported calendar viewing modes and capabilities. After results, suggest viewing scheduled posts or creating a shareable link."
+    },
+    {
+      "name": "get_shareable_calendars",
+      "description": "List existing shareable calendars for a workspace. After results, suggest creating a new link or opening calendar views."
+    },
+    {
+      "name": "create_public_calendar_link",
+      "description": "Create a shareable public calendar link for selected channels and date range. Before creating, ask whether the link should be password protected or open; if protected, collect an 8-20 character password."
+    },
+    {
+      "name": "get_in_app_calendar_url",
+      "description": "Return the authenticated in-app Social Champ calendar URL. After results, suggest viewing scheduled posts or managing shareable calendars."
+    },
+    {
+      "name": "update_shareable_calendar",
+      "description": "Update a shareable calendar by calendarId, including name, date range, password, isActive, or permissionRoles."
+    },
+    {
+      "name": "approval_list_pending",
+      "description": "List posts awaiting approval, owned by the account. Returns up to 50 per call. Filterable by channel and team-member id. Use to answer 'what's pending review' or 'show me posts waiting on me'."
+    },
+    {
+      "name": "approval_approve",
+      "description": "Approve a post that's awaiting review. The account must be in the workflow's approvers list for the active stage \u2014 if not, returns NOT_AN_APPROVER. Optional comment is recorded on the workflow history. Optional dateTime reschedules the post when the approval also moves it past the final stage."
+    },
+    {
+      "name": "approval_reject",
+      "description": "Reject a post that's awaiting review. Same approver requirement as approval_approve. Optional comment is recorded; the post moves to DECLINED status and a notification fires to the post owner."
+    },
+    {
+      "name": "approval_assign",
+      "description": "Send an approval reminder for a pending post. Wraps the dashboard's 'Send reminder' notification \u2014 fires to the workflow stage's approvers (the same set defined in the workflow template). When `email` is supplied, validates that person IS an approver before sending; pass it to assert someone specific is in the loop. Throttled at 1 hour per post \u2014 repeated calls return ALREADY_NOTIFIED. Note: this does NOT modify the workflow's approver list \u2014 to add someone, edit the workflow template in Settings."
+    },
+    {
+      "name": "bulk_delete",
+      "description": "Delete many posts at once \u2014 past or future, by either an explicit id list OR a predicate (channels \u00d7 date range \u00d7 status \u00d7 error state). DESTRUCTIVE: defaults to dryRun=true; the LLM MUST explicitly pass dryRun=false to actually delete after the user confirms. Cap is 500 posts per call \u2014 anything bigger needs scripting. Each delete also cancels its publish job. Note: queue_clear is the lighter primitive for 'clear my upcoming queue' \u2014 bulk_delete is for ad-hoc destructive cleanup (failed posts, posts on a deprecated channel, etc.)."
+    },
+    {
+      "name": "queue_reorder",
+      "description": "Reschedule many posts in one call. Takes a list of {postId, dateTime} pairs and applies each as a time-only update \u2014 useful for 'swap these two posts', 'shift Tuesday's batch to Wednesday', or 'pull the launch announcement up to morning'. Distinct from queue_pause (which freezes posts in place) and bulk_delete (which removes them) \u2014 this just moves their dateTime. Sequential per-post update so a failure on one doesn't roll back the others; per-item failures captured in `data.failures`. Up to 100 items per call."
+    },
+    {
+      "name": "bulk_label",
+      "description": "Apply (or replace, or clear) labels on up to 200 posts in a single call. Use mode=add to union the supplied labelIds with each post's existing labels (default mode=replace overwrites). The response reports per-post failures so the LLM can re-try only the bad ones."
+    },
+    {
+      "name": "generate_post",
+      "description": "Draft a social-media post body in the user's brand voice. Use when the user says 'write a post about X', 'draft something for our launch', 'give me an idea for Black Friday'. Produces text only \u2014 does not schedule. After successful generation, suggest scheduling it via 'create_text_post' or 'bulk_schedule', or refining via 'rewrite'."
+    },
+    {
+      "name": "suggest_hashtags",
+      "description": "Generate a set of hashtags for a topic or an existing post. The Wizard returns a list \u2014 use it to enrich a draft post, populate a post-creation tool's text, or just answer 'what hashtags should I use for X'."
+    },
+    {
+      "name": "rewrite",
+      "description": "Rewrite an existing post body \u2014 shorten, expand, or rephrase. Use when the user pastes a post and asks for a tweak ('make this shorter', 'tighten this up', 'rewrite more casually'). Returns the original + rewritten text so the LLM can show a diff."
+    },
+    {
+      "name": "generate_image",
+      "description": "Generate up to 4 images for a post. Use when the user says 'make me an image of...', 'I need a hero shot for...', 'create some visuals for the launch'. Counts against the user's monthly image-generation quota (same meter the AI Wizard uses)."
+    },
+    {
+      "name": "queue_pause",
+      "description": "Pause publishing on one or more channels. Future posts can't be scheduled on a paused channel, and any upcoming posts already in the queue will be held without firing. Use 'queue_resume' to bring the channel back online. When channelIds is omitted, every channel in the resolved workspace is paused."
+    },
+    {
+      "name": "queue_resume",
+      "description": "Resume a previously-paused channel. Lifts the per-channel user-pause flag and releases held posts back to their original slots \u2014 except on channels where billing has independently locked publishing, which stay frozen. The response reports billingLockedChannels separately so you can tell the user when a billing issue is what's still blocking publishes."
+    },
+    {
+      "name": "queue_clear",
+      "description": "Bulk-delete upcoming scheduled posts in a date range, optionally filtered by channels. Defaults to fromDate=now (past posts are out of scope). Always call once with dryRun=true first to surface the count, then again with dryRun=false (or omitted) to actually delete \u2014 this is irreversible. Each delete also cancels its publish job."
+    },
+    {
+      "name": "list_collections",
+      "description": "List the user's recycle collections. Each entry includes id, title, postCount and workspaceId. Use this before 'recycle_post' so the LLM can choose a target collection (or confirm the auto-resolved fallback)."
+    },
+    {
+      "name": "recycle_post",
+      "description": "Copy an existing post into a recycle collection so it re-publishes on the collection's recycle schedule. The original post is left untouched. If collectionId is omitted, the user's oldest collection in the resolved workspace is used; if the user has no collections, the response is a structured NEEDS_COLLECTION error so you can suggest creating one in the dashboard."
+    },
+    {
+      "name": "bulk_schedule",
+      "description": "Schedule many posts in one call (up to 100). Each entry has its own text, channels, image/video URLs, and optional schedule time \u2014 useful for rolling out a content calendar, importing a CSV, or filling a queue. After successful scheduling, ask whether to view the calendar or check the queue."
+    },
+    {
+      "name": "label_list",
+      "description": "List the post labels available in the user's workspace. Use this before applying a label to a post so the label exists. After listing, ask whether to create a new label, apply one to a post, or filter posts by label."
+    },
+    {
+      "name": "label_create",
+      "description": "Create a new post label in the user's workspace. Returns the new label including its id, which can be used immediately with 'label_apply'. Errors with code DUPLICATE if a label with the same title (case-insensitive) already exists."
+    },
+    {
+      "name": "label_apply",
+      "description": "Replace the labels on an existing post with the supplied list. Pass an empty `labelIds` to clear all labels from a post. The post must belong to the user's workspace."
+    },
+    {
+      "name": "label_remove",
+      "description": "Remove specific labels from a post (without touching the rest). Use when the user says 'unlabel this post', 'remove the X tag', 'drop the label'. Different from 'label_apply' which REPLACES the full label set; this tool subtracts the named ids from whatever is already on the post. Pass empty `labelIds` to clear all labels."
+    },
+    {
+      "name": "instagram_first_comment",
+      "description": "Set or update the first-comment text on a scheduled or published Instagram post. Common pattern: keep the caption clean and put hashtags + CTA + tracked link in the first comment. Only works on Instagram posts (FB_PAGE / TW / LinkedIn use captions directly). Replaces the existing first-comment if one is already set."
+    },
+    {
+      "name": "delete_shareable_calendar",
+      "description": "Delete a shareable calendar by calendarId."
+    }
+  ],
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "linux",
+      "win32"
+    ],
+    "runtimes": {
+      "node": ">=18"
+    }
+  },
+  "keywords": [
+    "social media",
+    "scheduling",
+    "socialchamp",
+    "social media management",
+    "mcp"
+  ],
+  "license": "MIT"
+}
