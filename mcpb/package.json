@@ -4,6 +4,6 @@
   "private": true,
   "description": "Claude Desktop Extension for Social Champ (OAuth via mcp-remote)",
   "dependencies": {
-    "mcp-remote": "^0.1.0"
+    "mcp-remote": "0.1.38"
   }
 }
