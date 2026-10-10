@@ -39,15 +39,20 @@ For the full per-tool list with required arguments and scopes, see
 
 - Python 3.10 or newer.
 - A Social Champ API key or OAuth2 access token. Both are sent as a Bearer token.
-  OAuth2 scopes used by the published tools are `read_profile` and `manage_post`.
+  OAuth2 scopes used by the published tools are `read_profile` and `manage_post`;
+  the agency tools (approvals, reminders, bulk delete) also need `manage_team`.
 
 ## Install
 
-With [uv](https://docs.astral.sh/uv/):
+With [uv](https://docs.astral.sh/uv/), as a command on your PATH:
 
 ```bash
-uv pip install socialchamp-mcp
+uv tool install socialchamp-mcp
 ```
+
+If your shell then cannot find `socialchamp-mcp`, run `uv tool update-shell` and
+open a new terminal. To run it without installing, use `uvx socialchamp-mcp`
+wherever this README says `socialchamp-mcp`.
 
 With pip:
 
@@ -75,7 +80,18 @@ Set configuration through environment variables.
 | `SOCIALCHAMP_TRANSPORT` | no | `stdio` | `stdio`, `sse`, or `streamable-http` |
 | `SOCIALCHAMP_MCP_PROTOCOL_VERSION` | no | `2025-06-18` | MCP protocol version sent on initialize |
 
-Copy `.env.example` to `.env` for local use. Never commit `.env`.
+The server reads only the environment; it does not load a `.env` file itself.
+For local use, put the variables in a `.env` file (in a source checkout, copy
+`.env.example`; otherwise create it with a line `SOCIALCHAMP_API_KEY=...` in an
+editor), make it readable only by you, and load it into your shell before
+starting the server:
+
+```bash
+chmod 600 .env
+set -a; . ./.env; set +a
+```
+
+Run `unset SOCIALCHAMP_API_KEY` when you are done. Never commit `.env`.
 
 ## MCP client setup
 
@@ -101,9 +117,32 @@ If the console script is not on your PATH, use `"command": "python"` with
 
 ### Claude Code
 
+The simplest way is the hosted server, with no API key: you sign in to Social
+Champ in your browser instead.
+
 ```bash
-claude mcp add socialchamp --env SOCIALCHAMP_API_KEY=your-api-key -- socialchamp-mcp
+claude mcp add --scope user --transport http socialchamp https://mcp.socialchamp.com/mcp
 ```
+
+Then run `/mcp` in Claude Code, choose `socialchamp` and sign in. `--scope user`
+makes the server available in every folder you open Claude Code in; without it,
+only in the folder where you ran the command. The sign-in grants `read_profile`
+and `manage_post`; approvals and other agency tools need `manage_team`, so use
+an API key that has it if you need those.
+
+To run this package locally with an API key instead, read the key without
+showing it or saving it to your shell history:
+
+```bash
+printf 'Social Champ API key: '; read -rs SOCIALCHAMP_API_KEY; printf '\n'
+claude mcp add --scope user socialchamp --env SOCIALCHAMP_API_KEY="$SOCIALCHAMP_API_KEY" -- socialchamp-mcp
+unset SOCIALCHAMP_API_KEY
+```
+
+With `uvx`, end the second line with `-- uvx socialchamp-mcp` instead. Claude
+Code keeps the key in its own settings (`~/.claude.json`), as it does for any
+server's environment, and the key is visible to other processes on the machine
+for the moment the command runs. On a shared machine, prefer the hosted sign-in.
 
 #### Calendar pane for Claude Code
 
@@ -133,7 +172,9 @@ The default transport is stdio, which is what Claude Desktop and Claude Code
 use. To run over HTTP instead, set `SOCIALCHAMP_TRANSPORT`:
 
 ```bash
-SOCIALCHAMP_TRANSPORT=streamable-http SOCIALCHAMP_API_KEY=your-api-key socialchamp-mcp
+printf 'Social Champ API key: '; read -rs SOCIALCHAMP_API_KEY; printf '\n'
+export SOCIALCHAMP_API_KEY
+SOCIALCHAMP_TRANSPORT=streamable-http socialchamp-mcp
 ```
 
 `sse` is also supported. Point your client at the resulting HTTP endpoint.
@@ -208,8 +249,10 @@ It waits for input on stdin rather than exiting. Stop it with Ctrl+C.
 
 - The API key is read from the environment and sent as a Bearer token. It is
   never logged or written to disk by this server.
-- Keep your key in `.env` or your client's secret store. Never commit it. The
-  `.gitignore` excludes `.env`.
+- Keep your key in `.env` or your client's secret store. Never commit it, and
+  never type it into a command line, where shell history keeps it. The
+  `.gitignore` excludes `.env`. Signing in with OAuth (the hosted server)
+  needs no key at all.
 - Tools are annotated read-only, write, or destructive. Destructive tools
   (`delete_post`, `delete_shareable_calendar`, `bulk_delete`, `queue_clear`)
   carry `destructiveHint=True` so clients can confirm before running them.
