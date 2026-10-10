@@ -121,10 +121,10 @@ The simplest way is the hosted server, with no API key: you sign in to Social
 Champ in your browser instead.
 
 ```bash
-claude mcp add --scope user --transport http socialchamp https://mcp.socialchamp.com/mcp
+claude mcp add --scope user --transport http SocialChamp https://mcp.socialchamp.com/mcp
 ```
 
-Then run `/mcp` in Claude Code, choose `socialchamp` and sign in. `--scope user`
+Then run `/mcp` in Claude Code, choose `SocialChamp` and sign in. `--scope user`
 makes the server available in every folder you open Claude Code in; without it,
 only in the folder where you ran the command. The sign-in grants `read_profile`
 and `manage_post`; approvals and other agency tools need `manage_team`, so use
@@ -135,7 +135,7 @@ showing it or saving it to your shell history:
 
 ```bash
 printf 'Social Champ API key: '; read -rs SOCIALCHAMP_API_KEY; printf '\n'
-claude mcp add --scope user socialchamp --env SOCIALCHAMP_API_KEY="$SOCIALCHAMP_API_KEY" -- socialchamp-mcp
+claude mcp add --scope user SocialChamp --env SOCIALCHAMP_API_KEY="$SOCIALCHAMP_API_KEY" -- socialchamp-mcp
 unset SOCIALCHAMP_API_KEY
 ```
 
@@ -159,8 +159,9 @@ claude plugin install socialchamp-calendar@socialchamp-mods
 
 It needs Claude Code 2.1.293 or later. Run `/reload-plugins`, then
 `/socialchamp-calendar`. The mod looks for this server under the name
-`SocialChamp`. If you added it as `socialchamp` (as above), set that name once
-with `/plugin configure socialchamp-calendar@socialchamp-mods`. In auto mode,
+`SocialChamp`, as added above, so there is nothing to set. If you added it under
+another name, set that name once with
+`/plugin configure socialchamp-calendar@socialchamp-mods`. In auto mode,
 add the permission rules from the
 [mod's README](https://github.com/SocialChamp/socialchamp-claude-mods#auto-mode-permission-rules)
 (`mcp__<server name>__<tool>`, spaces in the name as underscores) once the pane
