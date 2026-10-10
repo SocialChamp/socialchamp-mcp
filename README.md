@@ -105,6 +105,28 @@ If the console script is not on your PATH, use `"command": "python"` with
 claude mcp add socialchamp --env SOCIALCHAMP_API_KEY=your-api-key -- socialchamp-mcp
 ```
 
+#### Calendar pane for Claude Code
+
+Using Claude Code? The [Social Champ calendar mod](https://github.com/SocialChamp/socialchamp-claude-mods)
+adds a side pane on top of this server: week, month and day views, failed posts
+and approvals, drafts, and new posts written with Claude. It shows every change
+first and sends it only after you press Yes. It also asks you before Claude
+changes anything in Social Champ from chat.
+
+```bash
+claude plugin marketplace add SocialChamp/socialchamp-claude-mods
+claude plugin install socialchamp-calendar@socialchamp-mods
+```
+
+It needs Claude Code 2.1.293 or later. Run `/reload-plugins`, then
+`/socialchamp-calendar`. The mod looks for this server under the name
+`SocialChamp`. If you added it as `socialchamp` (as above), set that name once
+with `/plugin configure socialchamp-calendar@socialchamp-mods`. In auto mode,
+add the permission rules from the
+[mod's README](https://github.com/SocialChamp/socialchamp-claude-mods#auto-mode-permission-rules)
+(`mcp__<server name>__<tool>`, spaces in the name as underscores) once the pane
+has opened.
+
 ## Running over HTTP
 
 The default transport is stdio, which is what Claude Desktop and Claude Code
