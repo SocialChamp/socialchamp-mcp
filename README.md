@@ -120,12 +120,11 @@ claude plugin install socialchamp-calendar@socialchamp-mods
 
 It needs Claude Code 2.1.293 or later. Run `/reload-plugins`, then
 `/socialchamp-calendar`. The mod looks for this server under the name
-`SocialChamp`, and usually finds it as `socialchamp` (as above) too. If the pane
-says it cannot reach Social Champ, set the server's name as `/mcp` lists it with
-`/plugin configure socialchamp-calendar@socialchamp-mods`. In auto mode, add the
-permission rules from the
-[mod's README](https://github.com/SocialChamp/socialchamp-claude-mods#permissions)
-(`mcp__socialchamp__<tool>`) once the pane has opened.
+`SocialChamp`. If you added it as `socialchamp` (as above), set that name once
+with `/plugin configure socialchamp-calendar@socialchamp-mods`. In auto mode,
+add the permission rules from the
+[mod's README](https://github.com/SocialChamp/socialchamp-claude-mods#auto-mode-permission-rules)
+(`mcp__<server name>__<tool>`) once the pane has opened.
 
 ## Running over HTTP
 
