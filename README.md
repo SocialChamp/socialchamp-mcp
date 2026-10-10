@@ -124,7 +124,8 @@ It needs Claude Code 2.1.293 or later. Run `/reload-plugins`, then
 with `/plugin configure socialchamp-calendar@socialchamp-mods`. In auto mode,
 add the permission rules from the
 [mod's README](https://github.com/SocialChamp/socialchamp-claude-mods#auto-mode-permission-rules)
-(`mcp__<server name>__<tool>`) once the pane has opened.
+(`mcp__<server name>__<tool>`, spaces in the name as underscores) once the pane
+has opened.
 
 ## Running over HTTP
 
