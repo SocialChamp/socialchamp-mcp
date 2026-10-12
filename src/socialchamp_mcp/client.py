@@ -68,11 +68,20 @@ class SocialChampClient:
         self._request_id += 1
         return self._request_id
 
-    async def _rpc(self, method: str, params: dict[str, Any] | None = None) -> Any:
+    async def _rpc(
+        self,
+        method: str,
+        params: dict[str, Any] | None = None,
+        *,
+        timeout: float | None = None,
+    ) -> Any:
         payload: dict[str, Any] = {"jsonrpc": "2.0", "id": self._next_id(), "method": method}
         if params is not None:
             payload["params"] = params
-        response = await self._client.post(self._url, json=payload)
+        request_options: dict[str, Any] = {}
+        if timeout is not None:
+            request_options["timeout"] = timeout
+        response = await self._client.post(self._url, json=payload, **request_options)
         response.raise_for_status()
         body = response.json()
         error = body.get("error")
@@ -120,4 +129,28 @@ class SocialChampClient:
             arguments: Tool arguments, already in the live server's camelCase shape.
         """
         await self._ensure_initialized()
-        return await self._rpc("tools/call", {"name": name, "arguments": arguments})
+        timeout = (
+            self._settings.media_import_timeout
+            if name == "import_media_from_url"
+            else None
+        )
+        try:
+            return await self._rpc(
+                "tools/call",
+                {"name": name, "arguments": arguments},
+                timeout=timeout,
+            )
+        except (httpx.ReadTimeout, httpx.HTTPStatusError) as error:
+            ambiguous_gateway_error = (
+                isinstance(error, httpx.HTTPStatusError)
+                and error.response.status_code in {502, 503, 504}
+            )
+            if name != "import_media_from_url" or not (
+                isinstance(error, httpx.ReadTimeout) or ambiguous_gateway_error
+            ):
+                raise
+            raise SocialChampError(
+                "The media import response timed out and its final outcome is unknown. "
+                "Check the Media Library before retrying to avoid creating a duplicate.",
+                code="MEDIA_IMPORT_CLIENT_TIMEOUT",
+            ) from error

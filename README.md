@@ -19,7 +19,9 @@ Tools are grouped by domain:
 - Posts: create, update, delete, bulk schedule, browse, reorder the queue, set Instagram first comment.
 - Channels: list, filter, fetch one, location search.
 - Workspaces: list.
-- Calendars: view options, in-app URL, shareable calendar create, list, update, delete.
+- Calendars: daily/channel/status summary, view options, in-app URL, shareable calendar create, list, update, delete.
+- Calendar data: cached post metrics, workspace drafts, queue slots, best-time heat maps, public holidays, stored comments and individual post links.
+- Media: direct upload, completion and public URL import.
 - Queue: pause, resume, clear.
 - Labels: list, create, apply, remove, bulk apply.
 - Recycling: list collections, recycle a post.
@@ -77,6 +79,7 @@ Set configuration through environment variables.
 | `SOCIALCHAMP_API_KEY` | yes | none | Bearer token: a Social Champ API key or OAuth2 access token |
 | `SOCIALCHAMP_API_BASE_URL` | no | `https://mcp.socialchamp.com/mcp` | Override the hosted MCP endpoint (for example a local test server) |
 | `SOCIALCHAMP_TIMEOUT` | no | `30` | Request timeout in seconds |
+| `SOCIALCHAMP_MEDIA_IMPORT_TIMEOUT` | no | `150` | URL media import timeout in seconds |
 | `SOCIALCHAMP_TRANSPORT` | no | `stdio` | `stdio`, `sse`, or `streamable-http` |
 | `SOCIALCHAMP_MCP_PROTOCOL_VERSION` | no | `2025-06-18` | MCP protocol version sent on initialize |
 
@@ -265,3 +268,12 @@ It waits for input on stdin rather than exiting. Stop it with Ctrl+C.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+
+## Calendar and media tool compatibility
+
+The catalog includes 52 tools and requires matching hosted Auth and Publisher implementations. Calendar summaries use inclusive ranges of at most 93 days and an IANA timezone. Counts are sparse; missing combinations mean zero. Metrics are cached, and comments are already-ingested inbox items. Use `get_paginated_posts` status, channel, label, approval and error filters for details, and `slim=true` to omit heavy media fields.
+
+`get_post_app_url` opens the authenticated post preview; native live rows and drafts have no supported preview link. The new calendar reads require owner connections; delegated Admin/team-member contexts are rejected by the hosted service until its bridges preserve their permissions. Approval workflows require `manage_team`; reconnect OAuth and opt in on an owned account to grant it. Existing tokens are not upgraded.
+
+Media tools support direct upload and public URL import. Imports use a separate 150-second client timeout. If an import times out or returns an ambiguous gateway failure, check the Media Library before retrying to avoid duplicate imports. Schema generation preserves nested platform options, enums and validation bounds.

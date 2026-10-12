@@ -1,8 +1,13 @@
 [
   {
     "name": "create_image_post",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": false
+    },
     "title": "Post — Create with Images",
-    "description": "Create and optionally schedule an image post to one or more channels. After successful scheduling, ask whether to view posting calendar, check scheduled posts, or create another post.",
+    "description": "Create and optionally schedule an image post to one or more channels. To save it for later review instead of publishing, set saveAsDraft=true; the draft lands in Publish > Drafts and never publishes on its own. After successful scheduling, ask whether to view posting calendar, check scheduled posts, or create another post.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -21,6 +26,13 @@
           },
           "description": "Publicly accessible image URL strings to attach to the post (e.g. 'https://example.com/image.jpg')."
         },
+        "videoUrls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Publicly accessible video URL strings. Required for Facebook Reels, YouTube videos/Shorts, global REEL/REEL_FEED, and Instagram cover-frame selection. An Instagram-only Reel may instead use one image for image-to-Reel conversion."
+        },
         "channelIds": {
           "type": "array",
           "items": {
@@ -30,7 +42,13 @@
         },
         "dateTime": {
           "type": "string",
-          "description": "ISO 8601 date-time for when to publish (e.g. '2026-04-10T14:00:00Z'). Required when isScheduled is true. Omit to post immediately."
+          "minLength": 1,
+          "description": "ISO 8601 date-time with a timezone for when to publish (e.g. '2026-04-10T14:00:00Z' or '2026-04-10T19:00:00+05:00'). Required when isScheduled is true. Omit to post immediately. With saveAsDraft=true it is optional and records the draft's intended date without scheduling anything."
+        },
+        "saveAsDraft": {
+          "type": "boolean",
+          "description": "Set to true to save the post as an editable draft instead of publishing or scheduling it. The draft appears in Publish > Drafts and can be opened in the composer to add media or edit the text before it goes out. Nothing publishes a draft on its own. Cannot be combined with isScheduled=true; pass dateTime on its own to record an intended date on the draft.",
+          "default": false
         },
         "isScheduled": {
           "type": "boolean",
@@ -82,6 +100,129 @@
         "instaFirstComment": {
           "type": "string",
           "description": "DEPRECATED — pass `firstComment: { text }` instead. Kept for backwards compatibility; if both are present, `firstComment` wins."
+        },
+        "contentType": {
+          "type": "string",
+          "enum": [
+            "POST",
+            "REEL",
+            "REEL_FEED",
+            "STORY"
+          ],
+          "description": "Legacy cross-platform fallback. REEL maps to Instagram/Facebook Reels and YouTube Shorts; REEL_FEED also shows the Instagram Reel in feed. Use channelOptions for platform-specific choices and omit this fallback when each target platform is configured there. If neither field is supplied, the request creates a regular feed post. REEL and REEL_FEED require videoUrls."
+        },
+        "channelOptions": {
+          "type": "object",
+          "description": "Optional platform-specific Reel and Short settings. These values override the legacy global contentType for their platform. Omit global contentType when every target platform is configured here.",
+          "properties": {
+            "instagram": {
+              "type": "object",
+              "properties": {
+                "contentType": {
+                  "type": "string",
+                  "enum": [
+                    "POST",
+                    "REEL",
+                    "REEL_FEED",
+                    "STORY"
+                  ],
+                  "description": "Instagram post type."
+                },
+                "placement": {
+                  "type": "string",
+                  "enum": [
+                    "REEL_ONLY",
+                    "REEL_AND_FEED"
+                  ],
+                  "description": "Where an Instagram Reel appears. REEL_AND_FEED also shows it in the Instagram feed."
+                },
+                "coverFrameTimeSeconds": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Video timestamp, in seconds, used for the Instagram Reel cover frame."
+                },
+                "collaborators": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Up to five Instagram collaborator usernames. Set Instagram contentType to REEL or REEL_FEED (or use Reel placement). A leading @ is optional."
+                }
+              },
+              "additionalProperties": false
+            },
+            "facebook": {
+              "type": "object",
+              "properties": {
+                "contentType": {
+                  "type": "string",
+                  "enum": [
+                    "POST",
+                    "REEL",
+                    "STORY"
+                  ],
+                  "description": "Facebook Page post type."
+                },
+                "collaborators": {
+                  "type": "array",
+                  "maxItems": 1,
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "One Facebook Page collaborator identifier. Set Facebook contentType to REEL."
+                }
+              },
+              "additionalProperties": false
+            },
+            "youtube": {
+              "type": "object",
+              "properties": {
+                "contentType": {
+                  "type": "string",
+                  "enum": [
+                    "VIDEO",
+                    "SHORT"
+                  ],
+                  "description": "Publish as a standard YouTube video or a Short."
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "description": "YouTube video title. Ask the user if they have not provided one; do not invent it."
+                },
+                "thumbnailUrl": {
+                  "type": "string",
+                  "description": "Publicly accessible custom YouTube thumbnail URL."
+                },
+                "privacyStatus": {
+                  "type": "string",
+                  "enum": [
+                    "PUBLIC",
+                    "PRIVATE",
+                    "UNLISTED"
+                  ],
+                  "description": "YouTube visibility."
+                },
+                "madeForKids": {
+                  "type": "boolean",
+                  "description": "Whether the YouTube video or Short is made for kids. Ask the user when unknown; never guess this value."
+                },
+                "notifySubscribers": {
+                  "type": "boolean",
+                  "description": "Whether YouTube should notify subscribers when the video publishes."
+                }
+              },
+              "required": [
+                "contentType",
+                "title",
+                "madeForKids"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
         }
       },
       "required": [
@@ -94,8 +235,13 @@
   },
   {
     "name": "create_text_post",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": false
+    },
     "title": "Post — Create Text",
-    "description": "Create and optionally schedule a text post to one or more channels. After successful scheduling, ask whether to view posting calendar, check scheduled posts, or create another post.",
+    "description": "Create and optionally schedule a text post to one or more channels. Select channelIds from get_channels or get_filtered_channels in the requested workspace. This tool does not accept workspaceId; do not pass it or substitute a workspace id for accountId. To schedule, set isScheduled=true and dateTime to the confirmed future ISO 8601 timestamp with timezone. To save it for later review instead of publishing, set saveAsDraft=true; the draft lands in Publish > Drafts and never publishes on its own. After successful scheduling, verify with get_scheduled_posts. Do not blindly retry an uncertain creation result; check for the created post first.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -114,9 +260,22 @@
           },
           "description": "Target channel id values where the post should be published; obtain these from 'get_channels' or 'get_filtered_channels'."
         },
+        "videoUrls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Publicly accessible video URL strings. Required for Facebook Reels, YouTube videos/Shorts, global REEL/REEL_FEED, and Instagram cover-frame selection. An Instagram-only Reel may instead use one image for image-to-Reel conversion."
+        },
         "dateTime": {
           "type": "string",
-          "description": "ISO 8601 date-time for when to publish (e.g. '2026-04-10T14:00:00Z'). Required when isScheduled is true. Omit to post immediately."
+          "minLength": 1,
+          "description": "ISO 8601 date-time with a timezone for when to publish (e.g. '2026-04-10T14:00:00Z' or '2026-04-10T19:00:00+05:00'). Required when isScheduled is true. Omit to post immediately. With saveAsDraft=true it is optional and records the draft's intended date without scheduling anything."
+        },
+        "saveAsDraft": {
+          "type": "boolean",
+          "description": "Set to true to save the post as an editable draft instead of publishing or scheduling it. The draft appears in Publish > Drafts and can be opened in the composer to add media or edit the text before it goes out. Nothing publishes a draft on its own. Cannot be combined with isScheduled=true; pass dateTime on its own to record an intended date on the draft.",
+          "default": false
         },
         "isScheduled": {
           "type": "boolean",
@@ -166,6 +325,133 @@
         "instaFirstComment": {
           "type": "string",
           "description": "DEPRECATED — pass `firstComment: { text }` instead. Kept for backwards compatibility."
+        },
+        "contentType": {
+          "type": "string",
+          "enum": [
+            "POST",
+            "REEL",
+            "REEL_FEED",
+            "STORY"
+          ],
+          "description": "Legacy cross-platform fallback. REEL maps to Instagram/Facebook Reels and YouTube Shorts; REEL_FEED also shows the Instagram Reel in feed. Use channelOptions for platform-specific choices and omit this fallback when each target platform is configured there. If neither field is supplied, the request creates a regular feed post. REEL and REEL_FEED require videoUrls."
+        },
+        "coverMediaId": {
+          "type": "string",
+          "description": "Optional custom cover for a video post. Pass the media id returned by complete_media_upload or import_media_from_url; a plain image URL is not accepted. The image must already have been uploaded through those tools. Only valid with exactly one videoUrl and no imageUrls. Must be a JPG or PNG of 2 MB or less. Applied as the cover on Instagram reels, TikTok, YouTube, Facebook reels, LinkedIn and Pinterest; channels with no cover concept ignore it. On TikTok, LinkedIn and Facebook feed video, an unusable cover fails the post. On YouTube and Facebook reels, a cover failure is silent and the post still publishes without it. Omit it to let the platform pick a frame automatically."
+        },
+        "channelOptions": {
+          "type": "object",
+          "description": "Optional platform-specific Reel and Short settings. These values override the legacy global contentType for their platform. Omit global contentType when every target platform is configured here.",
+          "properties": {
+            "instagram": {
+              "type": "object",
+              "properties": {
+                "contentType": {
+                  "type": "string",
+                  "enum": [
+                    "POST",
+                    "REEL",
+                    "REEL_FEED",
+                    "STORY"
+                  ],
+                  "description": "Instagram post type."
+                },
+                "placement": {
+                  "type": "string",
+                  "enum": [
+                    "REEL_ONLY",
+                    "REEL_AND_FEED"
+                  ],
+                  "description": "Where an Instagram Reel appears. REEL_AND_FEED also shows it in the Instagram feed."
+                },
+                "coverFrameTimeSeconds": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Video timestamp, in seconds, used for the Instagram Reel cover frame."
+                },
+                "collaborators": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Up to five Instagram collaborator usernames. Set Instagram contentType to REEL or REEL_FEED (or use Reel placement). A leading @ is optional."
+                }
+              },
+              "additionalProperties": false
+            },
+            "facebook": {
+              "type": "object",
+              "properties": {
+                "contentType": {
+                  "type": "string",
+                  "enum": [
+                    "POST",
+                    "REEL",
+                    "STORY"
+                  ],
+                  "description": "Facebook Page post type."
+                },
+                "collaborators": {
+                  "type": "array",
+                  "maxItems": 1,
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "One Facebook Page collaborator identifier. Set Facebook contentType to REEL."
+                }
+              },
+              "additionalProperties": false
+            },
+            "youtube": {
+              "type": "object",
+              "properties": {
+                "contentType": {
+                  "type": "string",
+                  "enum": [
+                    "VIDEO",
+                    "SHORT"
+                  ],
+                  "description": "Publish as a standard YouTube video or a Short."
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "description": "YouTube video title. Ask the user if they have not provided one; do not invent it."
+                },
+                "thumbnailUrl": {
+                  "type": "string",
+                  "description": "Publicly accessible custom YouTube thumbnail URL."
+                },
+                "privacyStatus": {
+                  "type": "string",
+                  "enum": [
+                    "PUBLIC",
+                    "PRIVATE",
+                    "UNLISTED"
+                  ],
+                  "description": "YouTube visibility."
+                },
+                "madeForKids": {
+                  "type": "boolean",
+                  "description": "Whether the YouTube video or Short is made for kids. Ask the user when unknown; never guess this value."
+                },
+                "notifySubscribers": {
+                  "type": "boolean",
+                  "description": "Whether YouTube should notify subscribers when the video publishes."
+                }
+              },
+              "required": [
+                "contentType",
+                "title",
+                "madeForKids"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
         }
       },
       "required": [
@@ -177,8 +463,13 @@
   },
   {
     "name": "update_post",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": false
+    },
     "title": "Post — Update",
-    "description": "Update an existing post by postId. Text maps to upstream message, and the post profile is auto-resolved from the existing post unless one channelId override is provided.",
+    "description": "Update an existing post by postId. Text maps to upstream message, and the post profile is auto-resolved from the existing post unless one channelId override is provided. Changing an approval-managed post can return it to pending approval.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -196,14 +487,21 @@
         },
         "dateTime": {
           "type": "string",
-          "description": "Updated ISO 8601 schedule date-time (e.g. '2026-04-18T14:00:00Z')."
+          "minLength": 1,
+          "description": "Updated ISO 8601 schedule date-time with a timezone (e.g. '2026-04-18T14:00:00Z')."
+        },
+        "channelId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional target channel override. Omit to keep the channel already attached to the post."
         },
         "channelIds": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "Updated target channel ids."
+          "maxItems": 1,
+          "description": "Deprecated compatibility field. Pass at most one channel id; prefer channelId."
         },
         "imageUrls": {
           "type": "array",
@@ -211,6 +509,125 @@
             "type": "string"
           },
           "description": "Updated image URL list for media posts."
+        },
+        "videoUrls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Updated video URL list for video posts."
+        },
+        "coverMediaId": {
+          "type": "string",
+          "description": "Updated custom video cover. Pass the media id returned by complete_media_upload or import_media_from_url. Requires exactly one video and no images."
+        },
+        "channelOptions": {
+          "type": "object",
+          "description": "Optional platform-specific Reel and Short settings to update. Supply only the fields that should change.",
+          "properties": {
+            "instagram": {
+              "type": "object",
+              "properties": {
+                "contentType": {
+                  "type": "string",
+                  "enum": [
+                    "POST",
+                    "REEL",
+                    "REEL_FEED",
+                    "STORY"
+                  ],
+                  "description": "Instagram post type."
+                },
+                "placement": {
+                  "type": "string",
+                  "enum": [
+                    "REEL_ONLY",
+                    "REEL_AND_FEED"
+                  ],
+                  "description": "Where an Instagram Reel appears. REEL_AND_FEED also shows it in the Instagram feed."
+                },
+                "coverFrameTimeSeconds": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Video timestamp, in seconds, used for the Instagram Reel cover frame."
+                },
+                "collaborators": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Up to five Instagram collaborator usernames. Set Instagram contentType to REEL or REEL_FEED (or use Reel placement). A leading @ is optional."
+                }
+              },
+              "additionalProperties": false
+            },
+            "facebook": {
+              "type": "object",
+              "properties": {
+                "contentType": {
+                  "type": "string",
+                  "enum": [
+                    "POST",
+                    "REEL",
+                    "STORY"
+                  ],
+                  "description": "Facebook Page post type."
+                },
+                "collaborators": {
+                  "type": "array",
+                  "maxItems": 1,
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "One Facebook Page collaborator identifier. Set Facebook contentType to REEL."
+                }
+              },
+              "additionalProperties": false
+            },
+            "youtube": {
+              "type": "object",
+              "properties": {
+                "contentType": {
+                  "type": "string",
+                  "enum": [
+                    "VIDEO",
+                    "SHORT"
+                  ],
+                  "description": "Publish as a standard YouTube video or a Short."
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "description": "YouTube video title. Ask the user if they have not provided one; do not invent it."
+                },
+                "thumbnailUrl": {
+                  "type": "string",
+                  "description": "Publicly accessible custom YouTube thumbnail URL."
+                },
+                "privacyStatus": {
+                  "type": "string",
+                  "enum": [
+                    "PUBLIC",
+                    "PRIVATE",
+                    "UNLISTED"
+                  ],
+                  "description": "YouTube visibility."
+                },
+                "madeForKids": {
+                  "type": "boolean",
+                  "description": "Whether the YouTube video or Short is made for kids. Ask the user when unknown; never guess this value."
+                },
+                "notifySubscribers": {
+                  "type": "boolean",
+                  "description": "Whether YouTube should notify subscribers when the video publishes."
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
         }
       },
       "required": [
@@ -221,6 +638,11 @@
   },
   {
     "name": "delete_post",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": true
+    },
     "title": "Post — Delete",
     "description": "Delete an existing post by postId, such as canceling a scheduled post.",
     "inputSchema": {
@@ -243,6 +665,11 @@
   },
   {
     "name": "get_channel",
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Channels — Get by Id",
     "description": "Fetch details for a single connected channel by channelId. After returning details, suggest posting or viewing that channel's posts.",
     "inputSchema": {
@@ -265,6 +692,11 @@
   },
   {
     "name": "location_search",
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Location — Search Places",
     "description": "Resolve a free-text place query (e.g. 'Eiffel Tower', 'Starbucks Seattle') into taggable location candidates for an FB_PAGE, IG_BUSINESS, or IG_DIRECT channel. Returns a list of { id, name, place }. Call this FIRST to obtain a valid `id`, then pass that location object to a post-creation tool (create_text_post / create_image_post / bulk_schedule) — only the `id` is honored when the post is published; a bare name/place is ignored. Other channel types do not support location tagging.",
     "inputSchema": {
@@ -292,6 +724,11 @@
   },
   {
     "name": "get_channels",
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Channels — List All",
     "description": "List all connected channels for the account. After listing, suggest filtering channels or creating a post.",
     "inputSchema": {
@@ -308,6 +745,11 @@
   },
   {
     "name": "get_filtered_channels",
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Channels — Search & Filter",
     "description": "List channels filtered by platform types and/or text search. After results, suggest creating a post or viewing posts for those channels.",
     "inputSchema": {
@@ -322,7 +764,7 @@
           "items": {
             "type": "string"
           },
-          "description": "Filter by platform names ('twitter','facebook','linkedin','instagram','tiktok','youtube','pinterest','bluesky','threads','mastodon','google') or internal codes ('TW','FB_PAGE','IN', etc.). Names are case-insensitive."
+          "description": "Filter by platform names ('twitter','facebook','linkedin','instagram','tiktok','youtube','pinterest','bluesky','threads','mastodon','google','telegram') or internal codes ('TW','FB_PAGE','IN', etc.). Names are case-insensitive."
         },
         "search": {
           "type": "string",
@@ -335,6 +777,11 @@
   },
   {
     "name": "get_workspaces",
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Workspaces — List All",
     "description": "List available workspaces for the account. After listing, suggest viewing or creating shareable calendars.",
     "inputSchema": {
@@ -351,14 +798,67 @@
   },
   {
     "name": "get_paginated_posts",
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Posts — Browse History",
-    "description": "Browse post history with page and pageSize controls. After results, suggest next page, channel-specific posts, or scheduled posts.",
+    "description": "Browse post history with channel, status, error, label and approval filters applied before pagination. Statuses are mutually exclusive. Drafts are separate: use get_drafts. Use get_calendar_summary for daily counts in one call.",
     "inputSchema": {
       "type": "object",
       "properties": {
         "accountId": {
           "type": "string",
           "description": "SocialChamp account id. Omit if the user has only one account — the default account is used automatically."
+        },
+        "channelIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "maxItems": 100,
+          "description": "Narrow to these Social Champ channel ids."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "POSTED",
+            "FAILED",
+            "PENDING_APPROVAL",
+            "HELD",
+            "MANUAL_NOTIFICATION",
+            "SCHEDULED",
+            "IN_PROGRESS"
+          ]
+        },
+        "hasError": {
+          "type": "boolean"
+        },
+        "labelIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "maxItems": 100,
+          "description": "Match any of these label ids."
+        },
+        "approvalStatus": {
+          "type": "string",
+          "enum": [
+            "PENDING",
+            "APPROVED",
+            "DECLINED"
+          ]
+        },
+        "slim": {
+          "type": "boolean",
+          "default": false,
+          "description": "Omit channelOptions and media URL arrays."
         },
         "page": {
           "type": "number",
@@ -385,8 +885,13 @@
   },
   {
     "name": "get_posts_for_channels",
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Posts — By Channels",
-    "description": "Fetch posts scoped to specific channelIds with an optional limit. After results, suggest creating a post or checking scheduled posts.",
+    "description": "Fetch posts scoped to specific channelIds with an optional limit. Returns posts scheduled through Social Champ only; set livePosts to true to also include content the customer published straight to the network. If a user says posts are missing here but visible in their Social Champ calendar or live on the network, retry with livePosts set to true. After results, suggest creating a post or checking scheduled posts.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -413,6 +918,11 @@
         "toDate": {
           "type": "string",
           "description": "Optional ISO 8601 end date-time filter (inclusive), e.g. '2026-04-30T23:59:59Z'."
+        },
+        "livePosts": {
+          "type": "boolean",
+          "description": "Include content published straight to the network rather than through Social Champ - posts made from the Instagram app, Meta Business Suite, or another scheduler. Off by default. These posts cannot be edited or deleted, and their ids are prefixed with 'live_'.",
+          "default": false
         }
       },
       "required": [
@@ -423,6 +933,11 @@
   },
   {
     "name": "get_posts_with_assets",
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Posts — With Media Assets",
     "description": "Fetch posts that include media assets such as images or videos. After results, suggest creating an image post or viewing all posts.",
     "inputSchema": {
@@ -444,8 +959,13 @@
   },
   {
     "name": "get_scheduled_posts",
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Posts — View Scheduled",
-    "description": "Fetch upcoming scheduled posts with an optional limit. After results, suggest creating a new post or opening calendar views.",
+    "description": "Fetch upcoming scheduled posts, soonest first with a stable id tie-break. Past dates do not widen the upcoming window.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -472,7 +992,304 @@
     }
   },
   {
+    "name": "get_calendar_summary",
+    "title": "Get Calendar Summary",
+    "description": "Read sparse counts by calendar day, channel and mutually exclusive status in one call. Date range is required and limited to 93 days. Missing combinations mean zero. Excludes deleted posts and drafts. Held, manual-notification and overdue in-progress posts are separate from scheduled and failed posts.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional account id. Defaults to the connected account."
+        },
+        "fromDate": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Inclusive ISO 8601 date-time with timezone."
+        },
+        "toDate": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Inclusive ISO 8601 date-time with timezone."
+        },
+        "channelIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "maxItems": 100,
+          "description": "Narrow to these Social Champ channel ids."
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "description": "IANA timezone for day boundaries; defaults to UTC."
+        }
+      },
+      "required": [
+        "fromDate",
+        "toDate"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_post_metrics",
+    "title": "Get Post Metrics",
+    "description": "Read cached engagement metrics for up to 20 Social Champ scheduled-post ids. Uses existing analytics plan and profile access gates. Missing metrics are unavailable, never zero; this does not refresh provider data. Currently available to owner connections only; delegated Admin connections are rejected because the Publisher HTTP bridge does not preserve team visibility.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional account id. Defaults to the connected account."
+        },
+        "postIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "maxItems": 20,
+          "description": "PostSchedule ids from get_paginated_posts; provider ids and live_ ids are not accepted."
+        }
+      },
+      "required": [
+        "postIds"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_drafts",
+    "title": "Get Drafts",
+    "description": "List saved Publish drafts in a workspace with existing creator/privacy visibility rules. Excludes rolling composer autosaves. Drafts are not returned by get_paginated_posts. Currently available to owner connections only; delegated Admin connections are rejected because the Publisher HTTP bridge does not preserve team visibility.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional account id. Defaults to the connected account."
+        },
+        "workspaceId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Workspace id from get_workspaces."
+        },
+        "channelIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "maxItems": 100,
+          "description": "Narrow to these Social Champ channel ids."
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "default": 1
+        },
+        "pageSize": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        }
+      },
+      "required": [
+        "workspaceId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_queue_slots",
+    "title": "Get Queue Slots",
+    "description": "Read the channel queue timetable, weekday enabled flags and timezone. A null timetable means none is configured; stored slots are recurring local-time templates, not reserved future publish dates.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional account id. Defaults to the connected account."
+        },
+        "channelId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Social Champ channel id."
+        }
+      },
+      "required": [
+        "channelId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_best_times",
+    "title": "Get Best Times",
+    "description": "Read the existing analytics best-time heat map for a channel over at most 93 days. This is historical engagement data, not a guarantee or an available queue slot. Unsupported or insufficient history may return no data. Currently available to owner connections only; delegated Admin connections are rejected because the Publisher HTTP bridge does not preserve team visibility.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional account id. Defaults to the connected account."
+        },
+        "channelId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Social Champ channel id."
+        },
+        "fromDate": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Inclusive ISO 8601 date-time with timezone."
+        },
+        "toDate": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Inclusive ISO 8601 date-time with timezone."
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "description": "IANA timezone; defaults to UTC."
+        }
+      },
+      "required": [
+        "channelId",
+        "fromDate",
+        "toDate"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_calendar_events",
+    "title": "Get Calendar Events",
+    "description": "Read public holidays configured for an owned workspace over at most 93 days. This returns the web calendar holiday markers, not calendar notes. An empty list means holidays are disabled or none match.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional account id. Defaults to the connected account."
+        },
+        "workspaceId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Workspace id."
+        },
+        "fromDate": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Inclusive ISO 8601 date-time with timezone."
+        },
+        "toDate": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Inclusive ISO 8601 date-time with timezone."
+        }
+      },
+      "required": [
+        "workspaceId",
+        "fromDate",
+        "toDate"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_post_comments",
+    "title": "Get Post Comments",
+    "description": "Read a bounded page of already-ingested Engage comments for a published Social Champ post. Uses existing profile and X Suite gates. An empty list does not prove the network has no comments; this never refreshes or replies. Currently available to owner connections only; delegated Admin connections are rejected because the Publisher HTTP bridge does not preserve team visibility.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional account id. Defaults to the connected account."
+        },
+        "postId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "PostSchedule id from get_paginated_posts."
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "default": 1
+        },
+        "pageSize": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        }
+      },
+      "required": [
+        "postId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
     "name": "get_calendar_view_options",
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Calendar — View Options",
     "description": "Return supported calendar viewing modes and capabilities. After results, suggest viewing scheduled posts or creating a shareable link.",
     "inputSchema": {
@@ -489,8 +1306,13 @@
   },
   {
     "name": "get_shareable_calendars",
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Calendar — List Shareable Links",
-    "description": "List existing shareable calendars for a workspace. After results, suggest creating a new link or opening calendar views.",
+    "description": "List existing shareable calendars for a workspace. Each record includes _id (database identifier for update/delete) and calendarId (public-link UUID, not a mutation identifier). Pass the record's _id as the calendarId argument to update_shareable_calendar or delete_shareable_calendar. After results, suggest creating a new link or opening calendar views.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -511,8 +1333,13 @@
   },
   {
     "name": "create_public_calendar_link",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": false
+    },
     "title": "Calendar — Create Public Link",
-    "description": "Create a shareable public calendar link for selected channels and date range. Before creating, ask whether the link should be password protected or open; if protected, collect an 8-20 character password.",
+    "description": "Create a shareable public calendar link for selected channels and date range. Returns _id for update/delete and calendarId for the public link; these identifiers are not interchangeable. Before creating, ask whether the link should be password protected or open; if protected, collect an 8-20 character password.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -576,7 +1403,38 @@
     }
   },
   {
+    "name": "get_post_app_url",
+    "title": "Calendar � Open a Post",
+    "description": "Return an authenticated Social Champ preview link for a scheduled, failed, pending or published Social Champ post. Native live_ posts and drafts are not supported. Sign in to the connected account before opening the link.",
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string"
+        },
+        "postId": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{24}$"
+        }
+      },
+      "required": [
+        "postId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
     "name": "get_in_app_calendar_url",
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Calendar — Get In-App URL",
     "description": "Return the authenticated in-app Social Champ calendar URL. After results, suggest viewing scheduled posts or managing shareable calendars.",
     "inputSchema": {
@@ -597,8 +1455,13 @@
   },
   {
     "name": "update_shareable_calendar",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": false
+    },
     "title": "Calendar — Update Shareable",
-    "description": "Update a shareable calendar by calendarId, including name, date range, password, isActive, or permissionRoles.",
+    "description": "Update a shareable calendar using its database _id as the calendarId argument, not its public-link UUID, including name, date range, password, isActive, or permissionRoles.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -608,7 +1471,7 @@
         },
         "calendarId": {
           "type": "string",
-          "description": "Shareable calendar id to update."
+          "description": "Database _id returned by create_public_calendar_link or get_shareable_calendars. Do not use the public calendarId UUID or the id query parameter from the shareable link."
         },
         "workspaceId": {
           "type": "string",
@@ -655,6 +1518,11 @@
   },
   {
     "name": "approval_list_pending",
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Approval — List Pending",
     "requiredScopes": [
       "manage_team"
@@ -709,6 +1577,11 @@
   },
   {
     "name": "approval_approve",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": false
+    },
     "title": "Approval — Approve Post",
     "requiredScopes": [
       "manage_team"
@@ -740,6 +1613,11 @@
   },
   {
     "name": "approval_reject",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Approval — Reject Post",
     "requiredScopes": [
       "manage_team"
@@ -767,6 +1645,11 @@
   },
   {
     "name": "approval_assign",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": false
+    },
     "title": "Approval — Remind Approvers",
     "requiredScopes": [
       "manage_team"
@@ -795,6 +1678,11 @@
   },
   {
     "name": "bulk_delete",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": true
+    },
     "title": "Posts — Bulk Delete",
     "requiredScopes": [
       "manage_team"
@@ -853,6 +1741,11 @@
   },
   {
     "name": "queue_reorder",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": false
+    },
     "title": "Queue — Bulk Reschedule",
     "description": "Reschedule many posts in one call. Takes a list of {postId, dateTime} pairs and applies each as a time-only update — useful for 'swap these two posts', 'shift Tuesday's batch to Wednesday', or 'pull the launch announcement up to morning'. Distinct from queue_pause (which freezes posts in place) and bulk_delete (which removes them) — this just moves their dateTime. Sequential per-post update so a failure on one doesn't roll back the others; per-item failures captured in `data.failures`. Up to 100 items per call.",
     "inputSchema": {
@@ -893,6 +1786,11 @@
   },
   {
     "name": "bulk_label",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Labels — Bulk Apply to Posts",
     "requiredScopes": [
       "manage_team"
@@ -939,6 +1837,11 @@
   },
   {
     "name": "generate_post",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "AI — Generate Post",
     "description": "Draft a social-media post body in the user's brand voice. Use when the user says 'write a post about X', 'draft something for our launch', 'give me an idea for Black Friday'. Produces text only — does not schedule. After successful generation, suggest scheduling it via 'create_text_post' or 'bulk_schedule', or refining via 'rewrite'.",
     "inputSchema": {
@@ -978,6 +1881,11 @@
   },
   {
     "name": "suggest_hashtags",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "AI — Suggest Hashtags",
     "description": "Generate a set of hashtags for a topic or an existing post. The Wizard returns a list — use it to enrich a draft post, populate a post-creation tool's text, or just answer 'what hashtags should I use for X'.",
     "inputSchema": {
@@ -1011,8 +1919,13 @@
   },
   {
     "name": "rewrite",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "AI — Rewrite Post",
-    "description": "Rewrite an existing post body — shorten, expand, or rephrase. Use when the user pastes a post and asks for a tweak ('make this shorter', 'tighten this up', 'rewrite more casually'). Returns the original + rewritten text so the LLM can show a diff.",
+    "description": "Rewrite an existing post body — shorten, expand, or rephrase. Use for user-provided text or a draft returned by generate_post earlier in the conversation when the user requests Social Champ AI rewriting. Pass that draft as text and its workspaceId; use style='shorten' for a shorter version. Returns the original + rewritten text. Show the returned rewrite rather than substituting your own copy. Does not create, schedule or publish a post.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -1047,6 +1960,11 @@
   },
   {
     "name": "generate_image",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "AI — Generate Image",
     "description": "Generate up to 4 images for a post. Use when the user says 'make me an image of...', 'I need a hero shot for...', 'create some visuals for the launch'. Counts against the user's monthly image-generation quota (same meter the AI Wizard uses).",
     "inputSchema": {
@@ -1091,6 +2009,11 @@
   },
   {
     "name": "queue_pause",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": false
+    },
     "title": "Queue — Pause",
     "description": "Pause publishing on one or more channels. Future posts can't be scheduled on a paused channel, and any upcoming posts already in the queue will be held without firing. Use 'queue_resume' to bring the channel back online. When channelIds is omitted, every channel in the resolved workspace is paused.",
     "inputSchema": {
@@ -1117,6 +2040,11 @@
   },
   {
     "name": "queue_resume",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": false
+    },
     "title": "Queue — Resume",
     "description": "Resume a previously-paused channel. Lifts the per-channel user-pause flag and releases held posts back to their original slots — except on channels where billing has independently locked publishing, which stay frozen. The response reports billingLockedChannels separately so you can tell the user when a billing issue is what's still blocking publishes.",
     "inputSchema": {
@@ -1143,8 +2071,13 @@
   },
   {
     "name": "queue_clear",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": true
+    },
     "title": "Queue — Clear",
-    "description": "Bulk-delete upcoming scheduled posts in a date range, optionally filtered by channels. Defaults to fromDate=now (past posts are out of scope). Always call once with dryRun=true first to surface the count, then again with dryRun=false (or omitted) to actually delete — this is irreversible. Each delete also cancels its publish job.",
+    "description": "Bulk-delete upcoming scheduled posts in a date range, optionally filtered by channels. Defaults to fromDate=now (past posts are out of scope). DESTRUCTIVE: defaults to dryRun=true, which surfaces the count without deleting; the LLM MUST explicitly pass dryRun=false to actually delete after the user confirms. A real delete must also be bounded — pass channelIds, or both fromDate and toDate — so re-send the dry run's filters alongside dryRun=false rather than dryRun=false on its own. This is irreversible, and each delete also cancels its publish job.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -1157,7 +2090,7 @@
           "items": {
             "type": "string"
           },
-          "description": "Optional channel-id filter. Omit to clear scheduled posts across every channel under the account."
+          "description": "Channel-id filter. Omitting it means every channel under the account, which is allowed only for a dry run: a real clear needs either channelIds or a fromDate+toDate window."
         },
         "fromDate": {
           "type": "string",
@@ -1169,8 +2102,8 @@
         },
         "dryRun": {
           "type": "boolean",
-          "description": "When true, count matching posts without deleting. Always start with this — the operation is destructive.",
-          "default": false
+          "default": true,
+          "description": "When true (default), returns the count without deleting. Pass false to actually clear the queue — irreversible."
         }
       },
       "additionalProperties": false
@@ -1178,6 +2111,11 @@
   },
   {
     "name": "list_collections",
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Recycle — List Collections",
     "description": "List the user's recycle collections. Each entry includes id, title, postCount and workspaceId. Use this before 'recycle_post' so the LLM can choose a target collection (or confirm the auto-resolved fallback).",
     "inputSchema": {
@@ -1197,6 +2135,11 @@
   },
   {
     "name": "recycle_post",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Recycle — Add Post to Collection",
     "description": "Copy an existing post into a recycle collection so it re-publishes on the collection's recycle schedule. The original post is left untouched. If collectionId is omitted, the user's oldest collection in the resolved workspace is used; if the user has no collections, the response is a structured NEEDS_COLLECTION error so you can suggest creating one in the dashboard.",
     "inputSchema": {
@@ -1227,8 +2170,13 @@
   },
   {
     "name": "bulk_schedule",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": false
+    },
     "title": "Posts — Bulk Schedule",
-    "description": "Schedule many posts in one call (up to 100). Each entry has its own text, channels, image/video URLs, and optional schedule time — useful for rolling out a content calendar, importing a CSV, or filling a queue. After successful scheduling, ask whether to view the calendar or check the queue.",
+    "description": "Schedule many posts in one call (up to 100). Each entry has its own text, channels, image/video URLs, and optional schedule time — useful for rolling out a content calendar, importing a CSV, or filling a queue. After successful scheduling, ask whether to view the calendar or check the queue. Drafts are not supported here: to save posts as drafts, call create_text_post or create_image_post with saveAsDraft=true, one per post. If this tool rejects saveAsDraft, do NOT retry without it -- that would publish or schedule every post in the batch.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -1272,11 +2220,12 @@
                 "items": {
                   "type": "string"
                 },
-                "description": "Optional publicly-accessible video URLs."
+                "description": "Publicly accessible video URL strings. Required for Facebook Reels, YouTube videos/Shorts, global REEL/REEL_FEED, and Instagram cover-frame selection. An Instagram-only Reel may instead use one image for image-to-Reel conversion."
               },
               "dateTime": {
                 "type": "string",
-                "description": "ISO 8601 datetime to publish at. Required when isScheduled is true."
+                "minLength": 1,
+                "description": "ISO 8601 datetime with a timezone to publish at. Required when isScheduled is true."
               },
               "isScheduled": {
                 "type": "boolean",
@@ -1325,6 +2274,133 @@
               "instaFirstComment": {
                 "type": "string",
                 "description": "DEPRECATED — pass `firstComment: { text }` instead."
+              },
+              "contentType": {
+                "type": "string",
+                "enum": [
+                  "POST",
+                  "REEL",
+                  "REEL_FEED",
+                  "STORY"
+                ],
+                "description": "Legacy cross-platform fallback for this entry. Use channelOptions for platform-specific choices and omit this fallback when each target platform is configured there. If neither field is supplied, the entry creates a regular feed post. REEL and REEL_FEED require videoUrls."
+              },
+              "coverMediaId": {
+                "type": "string",
+                "description": "Optional custom cover for this entry's video. Pass the media id returned by complete_media_upload or import_media_from_url; a plain image URL is not accepted. Only valid with exactly one videoUrl and no imageUrls. Must be a JPG or PNG of 2 MB or less. One id per entry, so a batch can give every video its own cover. See create_text_post's coverMediaId for per-platform behaviour."
+              },
+              "channelOptions": {
+                "type": "object",
+                "description": "Optional platform-specific Reel and Short settings. These values override the legacy global contentType for their platform. Omit global contentType when every target platform is configured here.",
+                "properties": {
+                  "instagram": {
+                    "type": "object",
+                    "properties": {
+                      "contentType": {
+                        "type": "string",
+                        "enum": [
+                          "POST",
+                          "REEL",
+                          "REEL_FEED",
+                          "STORY"
+                        ],
+                        "description": "Instagram post type."
+                      },
+                      "placement": {
+                        "type": "string",
+                        "enum": [
+                          "REEL_ONLY",
+                          "REEL_AND_FEED"
+                        ],
+                        "description": "Where an Instagram Reel appears. REEL_AND_FEED also shows it in the Instagram feed."
+                      },
+                      "coverFrameTimeSeconds": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Video timestamp, in seconds, used for the Instagram Reel cover frame."
+                      },
+                      "collaborators": {
+                        "type": "array",
+                        "maxItems": 5,
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Up to five Instagram collaborator usernames. Set Instagram contentType to REEL or REEL_FEED (or use Reel placement). A leading @ is optional."
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "facebook": {
+                    "type": "object",
+                    "properties": {
+                      "contentType": {
+                        "type": "string",
+                        "enum": [
+                          "POST",
+                          "REEL",
+                          "STORY"
+                        ],
+                        "description": "Facebook Page post type."
+                      },
+                      "collaborators": {
+                        "type": "array",
+                        "maxItems": 1,
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "One Facebook Page collaborator identifier. Set Facebook contentType to REEL."
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "youtube": {
+                    "type": "object",
+                    "properties": {
+                      "contentType": {
+                        "type": "string",
+                        "enum": [
+                          "VIDEO",
+                          "SHORT"
+                        ],
+                        "description": "Publish as a standard YouTube video or a Short."
+                      },
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100,
+                        "description": "YouTube video title. Ask the user if they have not provided one; do not invent it."
+                      },
+                      "thumbnailUrl": {
+                        "type": "string",
+                        "description": "Publicly accessible custom YouTube thumbnail URL."
+                      },
+                      "privacyStatus": {
+                        "type": "string",
+                        "enum": [
+                          "PUBLIC",
+                          "PRIVATE",
+                          "UNLISTED"
+                        ],
+                        "description": "YouTube visibility."
+                      },
+                      "madeForKids": {
+                        "type": "boolean",
+                        "description": "Whether the YouTube video or Short is made for kids. Ask the user when unknown; never guess this value."
+                      },
+                      "notifySubscribers": {
+                        "type": "boolean",
+                        "description": "Whether YouTube should notify subscribers when the video publishes."
+                      }
+                    },
+                    "required": [
+                      "contentType",
+                      "title",
+                      "madeForKids"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false
               }
             },
             "additionalProperties": false
@@ -1339,6 +2415,11 @@
   },
   {
     "name": "label_list",
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Labels — List",
     "description": "List the post labels available in the user's workspace. Use this before applying a label to a post so the label exists. After listing, ask whether to create a new label, apply one to a post, or filter posts by label.",
     "inputSchema": {
@@ -1358,6 +2439,11 @@
   },
   {
     "name": "label_create",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Labels — Create",
     "description": "Create a new post label in the user's workspace. Returns the new label including its id, which can be used immediately with 'label_apply'. Errors with code DUPLICATE if a label with the same title (case-insensitive) already exists.",
     "inputSchema": {
@@ -1384,6 +2470,11 @@
   },
   {
     "name": "label_apply",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Labels — Apply to Post",
     "description": "Replace the labels on an existing post with the supplied list. Pass an empty `labelIds` to clear all labels from a post. The post must belong to the user's workspace.",
     "inputSchema": {
@@ -1418,6 +2509,11 @@
   },
   {
     "name": "label_remove",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": false,
+      "destructiveHint": false
+    },
     "title": "Labels — Remove from Post",
     "description": "Remove specific labels from a post (without touching the rest). Use when the user says 'unlabel this post', 'remove the X tag', 'drop the label'. Different from 'label_apply' which REPLACES the full label set; this tool subtracts the named ids from whatever is already on the post. Pass empty `labelIds` to clear all labels.",
     "inputSchema": {
@@ -1451,7 +2547,134 @@
     }
   },
   {
+    "name": "create_media_upload",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": false
+    },
+    "title": "Media — Create Direct Upload",
+    "description": "Create a short-lived, size-constrained upload for a local JPG, PNG, GIF, MP4, or MOV file up to 200 MB. Submit multipart/form-data to upload.url with every returned upload.fields entry plus the file, then call complete_media_upload with uploadId and uploadToken. This flow requires an MCP host that can read the local file and submit multipart form data; otherwise use import_media_from_url with a public URL. The staging object is private and is not usable until completion succeeds.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the authenticated account is used automatically."
+        },
+        "fileName": {
+          "type": "string",
+          "description": "Original file name including its extension."
+        },
+        "contentType": {
+          "type": "string",
+          "enum": [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "video/mp4",
+            "video/quicktime"
+          ],
+          "description": "MIME type matching the file extension."
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 209715200,
+          "description": "Exact file size in bytes."
+        }
+      },
+      "required": [
+        "fileName",
+        "contentType",
+        "sizeBytes"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "complete_media_upload",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": false
+    },
+    "title": "Media — Complete Upload",
+    "description": "Verify a direct upload created by create_media_upload, promote it to an immutable final key, and save it to the account's Media Library. Completion is idempotent and checks the account-bound token, exact object size, MIME metadata, and file signature.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the authenticated account is used automatically."
+        },
+        "uploadId": {
+          "type": "string",
+          "description": "Upload session id returned by create_media_upload."
+        },
+        "uploadToken": {
+          "type": "string",
+          "description": "Account-bound upload token returned by create_media_upload."
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional display name in the Media Library."
+        },
+        "parentId": {
+          "type": "string",
+          "description": "Optional Media Library folder id owned by this account."
+        }
+      },
+      "required": [
+        "uploadId",
+        "uploadToken"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "import_media_from_url",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": false
+    },
+    "title": "Media — Import from URL",
+    "description": "Import a public JPG, PNG, GIF, MP4, or MOV URL into Social Champ storage and save it to the account's Media Library. Private and reserved network targets are blocked, redirect DNS is pinned, the complete transfer has a two-minute deadline, file signatures are verified, and the maximum file size is 200 MB.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "SocialChamp account id. Omit if the user has only one account — the authenticated account is used automatically."
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Publicly reachable media URL."
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional display name in the Media Library."
+        },
+        "parentId": {
+          "type": "string",
+          "description": "Optional Media Library folder id owned by this account."
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
     "name": "instagram_first_comment",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": false
+    },
     "title": "Instagram — First Comment",
     "description": "Set or update the first-comment text on a scheduled or published Instagram post. Common pattern: keep the caption clean and put hashtags + CTA + tracked link in the first comment. Only works on Instagram posts (FB_PAGE / TW / LinkedIn use captions directly). Replaces the existing first-comment if one is already set.",
     "inputSchema": {
@@ -1484,8 +2707,13 @@
   },
   {
     "name": "delete_shareable_calendar",
+    "annotations": {
+      "readOnlyHint": false,
+      "openWorldHint": true,
+      "destructiveHint": true
+    },
     "title": "Calendar — Delete Shareable",
-    "description": "Delete a shareable calendar by calendarId.",
+    "description": "Delete a shareable calendar using its database _id as the calendarId argument, not its public-link UUID.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -1495,7 +2723,7 @@
         },
         "calendarId": {
           "type": "string",
-          "description": "Shareable calendar id to delete."
+          "description": "Database _id returned by create_public_calendar_link or get_shareable_calendars. Do not use the public calendarId UUID or the id query parameter from the shareable link."
         },
         "workspaceId": {
           "type": "string",

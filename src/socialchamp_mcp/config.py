@@ -15,6 +15,7 @@ from dataclasses import dataclass
 # (for example http://localhost:3000/mcp).
 DEFAULT_BASE_URL = "https://mcp.socialchamp.com/mcp"
 DEFAULT_TIMEOUT = 30.0
+DEFAULT_MEDIA_IMPORT_TIMEOUT = 150.0
 DEFAULT_TRANSPORT = "stdio"
 DEFAULT_PROTOCOL_VERSION = "2025-06-18"
 VALID_TRANSPORTS = ("stdio", "sse", "streamable-http")
@@ -27,6 +28,7 @@ class Settings:
     api_key: str | None
     base_url: str
     timeout: float
+    media_import_timeout: float
     transport: str
     protocol_version: str
 
@@ -36,7 +38,8 @@ def _get_float(name: str, default: float) -> float:
     if not raw:
         return default
     try:
-        return float(raw)
+        parsed = float(raw)
+        return parsed if parsed > 0 else default
     except ValueError:
         return default
 
@@ -56,6 +59,9 @@ def load_settings() -> Settings:
         api_key=api_key,
         base_url=base_url,
         timeout=_get_float("SOCIALCHAMP_TIMEOUT", DEFAULT_TIMEOUT),
+        media_import_timeout=_get_float(
+            "SOCIALCHAMP_MEDIA_IMPORT_TIMEOUT", DEFAULT_MEDIA_IMPORT_TIMEOUT
+        ),
         transport=_get_transport(),
         protocol_version=os.environ.get("SOCIALCHAMP_MCP_PROTOCOL_VERSION")
         or DEFAULT_PROTOCOL_VERSION,
