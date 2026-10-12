@@ -26,12 +26,21 @@ OUT = ROOT / "src" / "socialchamp_mcp" / "server.py"
 DESTRUCTIVE = {"delete_post", "delete_shareable_calendar", "bulk_delete", "queue_clear"}
 READ = {
     "get_channel", "get_channels", "get_filtered_channels", "get_workspaces",
-    "get_paginated_posts", "get_posts_for_channels", "get_posts_with_assets",
+    "get_paginated_posts",
+    "get_calendar_summary",
+    "get_post_metrics",
+    "get_drafts",
+    "get_queue_slots",
+    "get_best_times",
+    "get_calendar_events",
+    "get_post_comments",
+    "get_posts_for_channels", "get_posts_with_assets",
     "get_scheduled_posts", "get_calendar_view_options", "get_shareable_calendars",
-    "get_in_app_calendar_url", "location_search", "approval_list_pending",
+    "get_in_app_calendar_url",
+    "get_post_app_url", "location_search", "approval_list_pending",
     "list_collections", "label_list", "suggest_hashtags", "rewrite",
 }
-UPDATE = {"update_post", "update_shareable_calendar"}
+UPDATE = {"update_post", "update_shareable_calendar", "complete_media_upload"}
 
 TYPE_MAP = {
     "string": "str",
@@ -44,10 +53,48 @@ TYPE_MAP = {
 
 
 def py_type(schema: dict) -> str:
+    enum = schema.get("enum")
+    if isinstance(enum, list) and enum:
+        return "Literal[" + ", ".join(repr(value) for value in enum) + "]"
     t = schema.get("type")
     if isinstance(t, list):
         t = next((x for x in t if x != "null"), None)
-    return TYPE_MAP.get(t, "object").replace("object", "dict[str, object]")
+    annotation = TYPE_MAP.get(t, "object").replace("object", "dict[str, object]")
+    if t == "object" and isinstance(schema.get("properties"), dict):
+        # A plain dict annotation discards the nested live-tool contract when
+        # FastMCP asks Pydantic to generate its input schema. Preserve the
+        # nested fields and additionalProperties boundary for typed objects
+        # such as channelOptions, location and firstComment.
+        json_schema_extra = {
+            "properties": schema["properties"],
+            **({"required": schema["required"]} if schema.get("required") else {}),
+            "additionalProperties": schema.get("additionalProperties", True),
+        }
+        return (
+            "Annotated[dict[str, object], "
+            f"BeforeValidator(_json_schema_validator({schema!r})), "
+            f"Field(json_schema_extra={json_schema_extra!r})]"
+        )
+    if t == "array":
+        item_schema = schema.get("items")
+        item_type = py_type(item_schema) if isinstance(item_schema, dict) else "object"
+        annotation = f"list[{item_type}]"
+        constraints = []
+        if isinstance(schema.get("minItems"), int):
+            constraints.append(f"min_length={schema['minItems']!r}")
+        if isinstance(schema.get("maxItems"), int):
+            constraints.append(f"max_length={schema['maxItems']!r}")
+        if constraints:
+            return f"Annotated[{annotation}, Field({', '.join(constraints)})]"
+        return annotation
+    constraints = []
+    if isinstance(schema.get("minimum"), (int, float)):
+        constraints.append(f"ge={schema['minimum']!r}")
+    if isinstance(schema.get("maximum"), (int, float)):
+        constraints.append(f"le={schema['maximum']!r}")
+    if constraints:
+        return f"Annotated[{annotation}, Field({', '.join(constraints)})]"
+    return annotation
 
 
 def clean(text: str) -> str:
@@ -150,10 +197,11 @@ MCP server over JSON-RPC. The client is created lazily on first use and cached.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any, Literal
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
+from pydantic import BeforeValidator, Field
 
 from .client import SocialChampClient
 from .config import load_settings
@@ -161,6 +209,81 @@ from .config import load_settings
 mcp = FastMCP("socialchamp")
 
 _client: SocialChampClient | None = None
+
+
+def _validate_json_schema(value: object, schema: dict, path: str = "value") -> None:
+    """Validate nested dictionary values that Pydantic otherwise treats as Any."""
+    expected = schema.get("type")
+    enum = schema.get("enum")
+    if isinstance(enum, list) and value not in enum:
+        raise ValueError(f"{path} must be one of {enum}")
+
+    if expected == "object":
+        if not isinstance(value, dict):
+            raise ValueError(f"{path} must be an object")
+        properties = schema.get("properties") or {}
+        for key in schema.get("required") or []:
+            if key not in value:
+                raise ValueError(f"{path}.{key} is required")
+        if schema.get("additionalProperties") is False:
+            unknown = next((key for key in value if key not in properties), None)
+            if unknown is not None:
+                raise ValueError(f"{path}.{unknown} is not supported")
+        for key, nested in value.items():
+            child_schema = properties.get(key)
+            if isinstance(child_schema, dict):
+                _validate_json_schema(nested, child_schema, f"{path}.{key}")
+        return
+
+    if expected == "array":
+        if not isinstance(value, list):
+            raise ValueError(f"{path} must be an array")
+        minimum = schema.get("minItems")
+        maximum = schema.get("maxItems")
+        if isinstance(minimum, int) and len(value) < minimum:
+            raise ValueError(f"{path} must contain at least {minimum} items")
+        if isinstance(maximum, int) and len(value) > maximum:
+            raise ValueError(f"{path} must contain at most {maximum} items")
+        item_schema = schema.get("items")
+        if isinstance(item_schema, dict):
+            for index, item in enumerate(value):
+                _validate_json_schema(item, item_schema, f"{path}[{index}]")
+        return
+
+    if expected == "string":
+        if not isinstance(value, str):
+            raise ValueError(f"{path} must be a string")
+        minimum = schema.get("minLength")
+        maximum = schema.get("maxLength")
+        if isinstance(minimum, int) and len(value) < minimum:
+            raise ValueError(f"{path} is too short")
+        if isinstance(maximum, int) and len(value) > maximum:
+            raise ValueError(f"{path} is too long")
+        return
+
+    if expected == "boolean" and not isinstance(value, bool):
+        raise ValueError(f"{path} must be a boolean")
+    if expected == "integer" and (not isinstance(value, int) or isinstance(value, bool)):
+        raise ValueError(f"{path} must be an integer")
+    if expected == "number" and (
+        not isinstance(value, (int, float)) or isinstance(value, bool)
+    ):
+        raise ValueError(f"{path} must be a number")
+    if expected in {"integer", "number"} and isinstance(value, (int, float)):
+        minimum = schema.get("minimum")
+        maximum = schema.get("maximum")
+        if isinstance(minimum, (int, float)) and value < minimum:
+            raise ValueError(f"{path} is below the minimum")
+        if isinstance(maximum, (int, float)) and value > maximum:
+            raise ValueError(f"{path} is above the maximum")
+
+
+def _json_schema_validator(schema: dict):
+    def validate(value: object) -> object:
+        _validate_json_schema(value, schema)
+        return value
+
+    return validate
 
 
 def _get_client() -> SocialChampClient:
